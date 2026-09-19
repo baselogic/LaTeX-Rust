@@ -503,10 +503,18 @@ fn format_rational(num: i128, den: i128) -> String {
         if n == 0 {
             break;
         }
-        n *= 10;
-        let digit = n / d;
-        s.push(char::from(b'0' + digit as u8));
-        n %= d;
+        let mut digit = 0u8;
+        let mut next = 0u128;
+        // Preserve long division without forming n * 10, which can overflow.
+        for _ in 0..10 {
+            next += n;
+            if next >= d {
+                next -= d;
+                digit += 1;
+            }
+        }
+        s.push(char::from(b'0' + digit));
+        n = next;
     }
     // Trim trailing zeros but keep one fractional digit.
     while s.ends_with('0') && !s.ends_with(".0") {
@@ -628,5 +636,13 @@ mod tests {
         let one = Dim::from_ieee32_bits(0x3f80_0000);
         assert!(one.eq_dim(&Dim::one()));
         assert_eq!(Dim::one().to_ieee32_bits(), 0x3f80_0000);
+    }
+
+    #[test]
+    fn decimal_format_avoids_large_remainder_overflow() {
+        let near_one = Dim::ratio(i64::MAX - 1, i64::MAX);
+        let squared = &near_one * &near_one;
+
+        assert_eq!(squared.to_dec_string(), "0.999999999999999999783159");
     }
 }
