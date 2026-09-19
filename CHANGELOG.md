@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.3] — 2026-09-19
+
+### Fixed
+
+- Exact-rational decimal formatting no longer overflows when long division processes large remainders.
+- egui tessellation now rejects vertex and index values that do not fit in `u32` instead of truncating them.
+
 ## [1.0.2] — 2026-09-04
 
 Standalone layout math. This crate does not depend on a numeric library.
