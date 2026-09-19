@@ -19,6 +19,16 @@ const FLAT_STEPS: i64 = 8;
 
 type Ipt = (i64, i64);
 
+fn tessellation_index_error() -> Error {
+    Error::Unsupported {
+        what: "glyph tessellation exceeds u32 index range".into(),
+    }
+}
+
+fn tessellation_index(index: usize) -> Result<u32, Error> {
+    u32::try_from(index).map_err(|_| tessellation_index_error())
+}
+
 /// Cached tessellation: font-unit vertices (y-up) and triangle indices.
 #[derive(Clone, Debug)]
 pub(super) struct GlyphTris {
@@ -45,6 +55,16 @@ pub(super) fn tessellate(font: &MathFont, glyph_id: u16) -> Result<GlyphTris, Er
     Ok(tris)
 }
 
+#[cfg(all(test, target_pointer_width = "64"))]
+mod tests {
+    use super::tessellation_index;
+
+    #[test]
+    fn tessellation_index_rejects_u32_overflow() {
+        assert!(tessellation_index(usize::MAX).is_err());
+    }
+}
+
 fn tessellate_uncached(font: &MathFont, glyph_id: u16) -> Result<GlyphTris, Error> {
     let face = font.face();
     let mut b = ContourBuilder::new();
@@ -60,13 +80,18 @@ fn tessellate_uncached(font: &MathFont, glyph_id: u16) -> Result<GlyphTris, Erro
     let mut vertices = Vec::new();
     let mut indices = Vec::new();
     for poly in polys {
+        let base = tessellation_index(vertices.len())?;
+        if let Some(last) = poly.len().checked_sub(1) {
+            let last = tessellation_index(last)?;
+            base.checked_add(last)
+                .ok_or_else(tessellation_index_error)?;
+        }
         let tris = earcut(&poly)?;
-        let base = vertices.len() as u32;
         vertices.extend(poly.into_iter().map(from_fix));
         for [a, b, c] in tris {
-            indices.push(base + a);
-            indices.push(base + b);
-            indices.push(base + c);
+            indices.push(base.checked_add(a).ok_or_else(tessellation_index_error)?);
+            indices.push(base.checked_add(b).ok_or_else(tessellation_index_error)?);
+            indices.push(base.checked_add(c).ok_or_else(tessellation_index_error)?);
         }
     }
     if indices.is_empty() {
@@ -413,7 +438,11 @@ fn earcut(poly: &[Ipt]) -> Result<Vec<[u32; 3]>, Error> {
             if !empty {
                 continue;
             }
-            tris.push([prev as u32, cur as u32, next as u32]);
+            tris.push([
+                tessellation_index(prev)?,
+                tessellation_index(cur)?,
+                tessellation_index(next)?,
+            ]);
             idx.remove(i);
             clipped = true;
             break;
@@ -425,7 +454,11 @@ fn earcut(poly: &[Ipt]) -> Result<Vec<[u32; 3]>, Error> {
         }
     }
     if idx.len() == 3 {
-        tris.push([idx[0] as u32, idx[1] as u32, idx[2] as u32]);
+        tris.push([
+            tessellation_index(idx[0])?,
+            tessellation_index(idx[1])?,
+            tessellation_index(idx[2])?,
+        ]);
     }
     Ok(tris)
 }
