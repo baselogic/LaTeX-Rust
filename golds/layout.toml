@@ -133,42 +133,42 @@ name = "sup-x2-text"
 kind = "dims"
 style = "text"
 input = "x^2"
-expect = "w=0.9638 h=0.8297 d=0.01"
+expect = "w=0.9758 h=0.8297 d=0.01"
 
 [[gold]]
 name = "sup-x2-display"
 kind = "dims"
 style = "display"
 input = "x^2"
-expect = "w=0.9638 h=0.8297 d=0.01"
+expect = "w=0.9758 h=0.8297 d=0.01"
 
 [[gold]]
 name = "sup-x2-cramped"
 kind = "dims"
 style = "text-cramped"
 input = "x^2"
-expect = "w=0.9638 h=0.7217 d=0.01"
+expect = "w=0.9758 h=0.7217 d=0.01"
 
 [[gold]]
 name = "sub-x2"
 kind = "dims"
 style = "text"
 input = "x_2"
-expect = "w=0.9538 h=0.479 d=0.21"
+expect = "w=0.9658 h=0.479 d=0.21"
 
 [[gold]]
 name = "subsup-x"
 kind = "dims"
 style = "text"
 input = "x_2^3"
-expect = "w=0.9638 h=0.8297 d=0.2688"
+expect = "w=0.9758 h=0.8297 d=0.2688"
 
 [[gold]]
 name = "sup-f2-italic"
 kind = "dims"
 style = "text"
 input = "f^2"
-expect = "w=0.9918 h=0.8297 d=0.225"
+expect = "w=1.0038 h=0.8297 d=0.225"
 
 [[gold]]
 name = "left-frac-text"
@@ -231,21 +231,21 @@ name = "sum-scripts-text"
 kind = "dims"
 style = "text"
 input = "\\sum_{k=1}^{n}"
-expect = "w=2.2912 h=0.782 d=0.329"
+expect = "w=2.3032 h=0.782 d=0.329"
 
 [[gold]]
 name = "int-display"
 kind = "dims"
 style = "display"
 input = "\\int_0^1"
-expect = "w=2.006 h=1.429 d=0.917"
+expect = "w=2.018 h=1.429 d=0.917"
 
 [[gold]]
 name = "int-text"
 kind = "dims"
 style = "text"
 input = "\\int_0^1"
-expect = "w=1.348 h=0.8269 d=0.2674"
+expect = "w=1.36 h=0.8269 d=0.2674"
 
 [[gold]]
 name = "pmatrix"
