@@ -9,8 +9,61 @@ pub mod egui;
 pub mod png;
 pub mod svg;
 
+use core::cmp::Ordering;
+
+use crate::dim::Dim;
+use crate::error::Error;
+use crate::font::MathFont;
+use crate::layout::MathBox;
+
 #[cfg(feature = "egui")]
 pub use egui::{latex_to_shapes, paint_egui, shapes};
 pub use egui::{render_egui, EguiOptions};
 pub use png::{latex_to_png, render_png, PngBackground, PngOptions};
 pub use svg::{latex_to_svg, render_svg, SvgOptions};
+
+/// Recover the outline scale already encoded in a glyph box's exact layout metrics.
+///
+/// LR-SCRIPT-GLYPH-SCALE-010: layout scales Script/ScriptScript glyph metrics, while the
+/// renderer starts from the font's unscaled outline coordinates. Keep that dependency-specific
+/// recovery in one place so every backend paints the same geometry.
+pub(crate) fn glyph_render_scale(
+    bx: &MathBox,
+    font: &MathFont,
+    ch: char,
+    glyph_id: u16,
+) -> Result<Dim, Error> {
+    let metrics = font.glyph_id(ch, glyph_id)?;
+    let mut scale: Option<Dim> = None;
+
+    for (actual, unscaled) in [
+        (&bx.width, &metrics.advance),
+        (&bx.height, &metrics.height),
+        (&bx.depth, &metrics.depth),
+    ] {
+        if unscaled.is_zero() {
+            continue;
+        }
+
+        let ratio = actual / unscaled;
+        if ratio.cmp(&Dim::zero()) != Some(Ordering::Greater) {
+            return Err(Error::Malformed {
+                what: "non-positive math glyph render scale".into(),
+            });
+        }
+
+        if let Some(expected) = &scale {
+            if !ratio.eq_dim(expected) {
+                return Err(Error::Malformed {
+                    what: "inconsistent math glyph render scale".into(),
+                });
+            }
+        } else {
+            scale = Some(ratio);
+        }
+    }
+
+    scale.ok_or_else(|| Error::Malformed {
+        what: "math glyph has no metric from which to recover render scale".into(),
+    })
+}
