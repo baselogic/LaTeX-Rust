@@ -91,10 +91,12 @@ pub fn layout_with_numbering(
     state: &mut NumberingState,
 ) -> Result<MathBox, Error> {
     let params = MathParams::from_font(font)?;
+    let script_placement = ScriptPlacementParams::from_font(font)?;
     let start = state.collect(node);
     Engine {
         font,
         params,
+        script_placement,
         numbers: state,
         idx: Cell::new(start),
     }
@@ -104,8 +106,39 @@ pub fn layout_with_numbering(
 struct Engine<'a> {
     font: &'a MathFont,
     params: MathParams,
+    script_placement: ScriptPlacementParams,
     numbers: &'a NumberingState,
     idx: Cell<usize>,
+}
+
+struct ScriptPlacementParams {
+    subscript_top_max: Dim,
+    superscript_bottom_min: Dim,
+    superscript_bottom_max_with_subscript: Dim,
+}
+
+impl ScriptPlacementParams {
+    fn from_font(font: &MathFont) -> Result<Self, Error> {
+        let math = font
+            .face()
+            .tables()
+            .math
+            .ok_or_else(|| Error::Unsupported {
+                what: "OpenType MATH table".into(),
+            })?;
+        let constants = math.constants.ok_or_else(|| Error::Unsupported {
+            what: "MATH constants".into(),
+        })?;
+        let units_per_em = font.units_per_em();
+        let fu = |value: i16| Dim::from_font_units(i64::from(value), units_per_em);
+        Ok(Self {
+            subscript_top_max: fu(constants.subscript_top_max().value),
+            superscript_bottom_min: fu(constants.superscript_bottom_min().value),
+            superscript_bottom_max_with_subscript: fu(
+                constants.superscript_bottom_max_with_subscript().value,
+            ),
+        })
+    }
 }
 
 struct Item {
@@ -551,6 +584,7 @@ impl Engine<'_> {
         }
         let s = self.params.scale(style);
         let ss = style.into_script();
+        let simple_character_nucleus = matches!(&base.content, BoxContent::Glyph { .. });
         let after = &self.params.space_after_script * &self.params.scale(style);
         let mut sup_shift = Dim::zero();
         let mut sub_shift = Dim::zero();
@@ -570,11 +604,38 @@ impl Engine<'_> {
         } else {
             None
         };
+        if simple_character_nucleus {
+            if let Some(sp) = &sup_laid {
+                let min_bottom = &self.script_placement.superscript_bottom_min * &s;
+                sup_shift = sup_shift.max(&(&sp.depth + &min_bottom));
+            }
+            if let Some(sb) = &sub_laid {
+                let max_top = &self.script_placement.subscript_top_max * &s;
+                sub_shift = sub_shift.max(&(&sb.height - &max_top).clamp_nonneg());
+            }
+        }
         if let (Some(sp), Some(sb)) = (&sup_laid, &sub_laid) {
             let gap = &sup_shift + &sub_shift - &sp.depth - &sb.height;
             let min_gap = &self.params.sub_superscript_gap_min * &s;
             if matches!(gap.cmp(&min_gap), Some(Ordering::Less)) {
                 sub_shift = &sub_shift + (&min_gap - &gap);
+            }
+
+            if simple_character_nucleus {
+                let current_bottom = &sup_shift - &sp.depth;
+                let target_bottom =
+                    &self.script_placement.superscript_bottom_max_with_subscript * &s;
+                if matches!(current_bottom.cmp(&target_bottom), Some(Ordering::Less)) {
+                    let raise = &target_bottom - &current_bottom;
+                    let lowered_subscript = &sub_shift - &raise;
+                    if !matches!(
+                        lowered_subscript.cmp(&Dim::zero()),
+                        Some(Ordering::Less) | None
+                    ) {
+                        sup_shift = &sup_shift + &raise;
+                        sub_shift = lowered_subscript;
+                    }
+                }
             }
         }
         let mut kids = vec![base.clone()];
