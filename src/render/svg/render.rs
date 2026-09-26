@@ -9,6 +9,7 @@ use crate::error::{Error, FontError};
 use crate::font::MathFont;
 use crate::layout::{layout, BoxContent, MathBox, MathStyle};
 use crate::parser::parse;
+use crate::render::glyph_render_scale;
 
 /// Options for [`render_svg`].
 ///
@@ -181,8 +182,9 @@ fn emit(
                 cache.insert(*glyph_id, s.clone());
                 s
             };
-            let sx = fu_pt.to_svg_string();
-            let nsx = (-fu_pt.clone()).to_svg_string();
+            let glyph_fu_pt = fu_pt * &glyph_render_scale(bx, font, *ch, *glyph_id)?;
+            let sx = glyph_fu_pt.to_svg_string();
+            let nsx = (-glyph_fu_pt).to_svg_string();
             out.push_str(&format!(
                 r#"<path d="{d}" transform="translate({} {}) scale({sx} {nsx})"/>"#,
                 origin_x.to_svg_string(),

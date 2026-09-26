@@ -12,6 +12,7 @@ use crate::dim::Dim;
 use crate::error::Error;
 use crate::font::MathFont;
 use crate::layout::{BoxContent, MathBox};
+use crate::render::glyph_render_scale;
 
 pub(super) fn shapes(
     tree: &MathBox,
@@ -86,9 +87,10 @@ fn emit(
     let baseline = parent_baseline - &(bx.shift.clone() * em_px);
     match &bx.content {
         BoxContent::Empty | BoxContent::Kern(_) => Ok(()),
-        BoxContent::Glyph { glyph_id, .. } => {
+        BoxContent::Glyph { ch, glyph_id } => {
             let tris = glyph_tris(font, *glyph_id, cache)?;
-            out.push(mesh_shape(tris, origin_x, &baseline, fu_px, fill));
+            let glyph_fu_px = fu_px * &glyph_render_scale(bx, font, *ch, *glyph_id)?;
+            out.push(mesh_shape(tris, origin_x, &baseline, &glyph_fu_px, fill));
             Ok(())
         }
         BoxContent::Rule => {

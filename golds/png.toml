@@ -18,7 +18,7 @@ input = "\\frac{1}{2}"
 dpi = "144"
 width_px = "9"
 height_px = "40"
-sha256 = "05a48f20f8ca73d56f33244e39054cfbc861e077f353811ec8f57e3090cf63a5"
+sha256 = "4ece3cb873702e60d8689340fee1171c8a10b7849a85f221a239fff9251a7a4d"
 
 [[gold]]
 name = "sqrt-x-144"
@@ -36,7 +36,7 @@ input = "x^2"
 dpi = "144"
 width_px = "24"
 height_px = "21"
-sha256 = "91e24cf7e9116b0a3f667169c7b66f6bad49bae3f1b28bbd22bbc75fd338cf39"
+sha256 = "836d9870a10bea848a06e71d58b848b72907caf40766fea4b9eb477de8abb809"
 
 [[gold]]
 name = "sum-display-144"
@@ -46,7 +46,7 @@ input = "\\sum_{k=1}^{n}"
 dpi = "144"
 width_px = "32"
 height_px = "77"
-sha256 = "f1c825f9ab0c9928e9801761f5cae95afbac64a324321c0e26274a0f3b36bfa3"
+sha256 = "96457cb74217519517faec701c1aa190b123394cc31d1813158adbecc197e441"
 
 [[gold]]
 name = "sup-x2-72"
@@ -55,7 +55,7 @@ input = "x^2"
 dpi = "72"
 width_px = "12"
 height_px = "11"
-sha256 = "6a61587e18db7ed8c0145dd4feda33f34393893a5b4b0071adf77a01ffeeb504"
+sha256 = "f99cf7d2e27f8d8fe29e07787d1b36983ef0da7b3c81132809e86d4e95e1bba8"
 
 [[gold]]
 name = "sup-x2-300"
@@ -64,7 +64,7 @@ input = "x^2"
 dpi = "300"
 width_px = "49"
 height_px = "42"
-sha256 = "06831988318c165981222bc9d012ddb624b962668fdac214cb6305782edd9963"
+sha256 = "ec330c0139c162f1906f45ed34ef1be4a24126d44db822edc800ae564c260a6a"
 
 [[gold]]
 name = "x-transparent"
