@@ -135,6 +135,18 @@ fn is_bare_latex(latex: &str) -> bool {
         || (rest.chars().count() == 1 && !rest.chars().next().unwrap().is_ascii_alphabetic())
 }
 
+fn default_math_catalog_glyph(ch: char, class: AtomKind) -> char {
+    if class == AtomKind::Ord
+        && (ch.is_ascii_alphabetic()
+            || ('α'..='ω').contains(&ch)
+            || matches!(ch, 'ϵ' | 'ϑ' | 'ϰ' | 'ϕ' | 'ϱ' | 'ϖ' | 'ϝ' | 'ı' | 'ȷ'))
+    {
+        styled_char(ch, TextStyle::It)
+    } else {
+        ch
+    }
+}
+
 #[test]
 fn symbol_golds() {
     let recs = load_golds();
@@ -262,14 +274,15 @@ fn catalog_single_glyphs_layout() {
         };
         let gs = glyphs(&bx);
         let ch = e.glyph.chars().next().unwrap();
-        if !gs.contains(&ch) {
+        let class = symbol_atom_kind(name);
+        let want = default_math_catalog_glyph(ch, class);
+        if !gs.contains(&want) {
             failed.push(format!(
-                "{} glyph {ch} not in {gs:?} (ast {})",
+                "{} glyph {want} not in {gs:?} (catalog {ch}, ast {})",
                 e.latex,
                 ast.gold()
             ));
         }
-        let class = symbol_atom_kind(name);
         if matches!(ast, MathNode::Symbol(_)) && class != symbol_atom_kind(name) {
             failed.push(format!("{} class", e.latex));
         }

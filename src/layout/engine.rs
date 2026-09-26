@@ -121,18 +121,20 @@ impl Engine<'_> {
     fn item(&self, node: &MathNode, style: MathStyle) -> Result<Item, Error> {
         match node {
             MathNode::Atom(c, k) => {
-                let bx = self.glyph(*c, style)?;
+                let ch = default_math_glyph(*c, *k);
+                let bx = self.glyph(ch, style)?;
                 Ok(Item {
                     bx,
                     class: Some(*k),
                 })
             }
             MathNode::Symbol(name) => {
-                let ch = symbol_char(name)?;
+                let class = symbol_class(name);
+                let ch = default_math_glyph(symbol_char(name)?, class);
                 let bx = self.glyph(ch, style)?;
                 Ok(Item {
                     bx,
-                    class: Some(symbol_class(name)),
+                    class: Some(class),
                 })
             }
             MathNode::Row(items) => self.row(items, style),
@@ -1988,6 +1990,22 @@ fn class_of(n: &MathNode) -> Option<AtomKind> {
         | MathNode::NoNumber
         | MathNode::Hline => None,
     }
+}
+
+// TeX variable atoms default to math italic. Explicit \mathrm/\mathbf/etc. are
+// represented as MathNode::Text and therefore bypass this default mapping.
+fn default_math_glyph(ch: char, class: AtomKind) -> char {
+    if class == AtomKind::Ord && is_default_math_variable(ch) {
+        styled_char(ch, TextStyle::It)
+    } else {
+        ch
+    }
+}
+
+fn is_default_math_variable(ch: char) -> bool {
+    ch.is_ascii_alphabetic()
+        || ('α'..='ω').contains(&ch)
+        || matches!(ch, 'ϵ' | 'ϑ' | 'ϰ' | 'ϕ' | 'ϱ' | 'ϖ' | 'ϝ' | 'ı' | 'ȷ')
 }
 
 fn single_glyph(name: &str) -> Option<char> {
