@@ -551,7 +551,7 @@ impl Engine<'_> {
         }
         let s = self.params.scale(style);
         let ss = style.into_script();
-        let after = &self.params.space_after_script * &self.params.scale(ss);
+        let after = &self.params.space_after_script * &self.params.scale(style);
         let mut sup_shift = Dim::zero();
         let mut sub_shift = Dim::zero();
         let sup_laid = if let Some(e) = sup {
