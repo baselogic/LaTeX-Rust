@@ -439,6 +439,9 @@ impl Engine<'_> {
                 }
             }
             out.push(laid[i].bx.clone());
+            if row_needs_math_italic_kern(&items[i]) && !laid[i].bx.italic.is_zero() {
+                out.push(MathBox::kern(laid[i].bx.italic.clone()));
+            }
         }
         let class = if n == 1 {
             classes[0]
@@ -2077,6 +2080,23 @@ fn is_default_math_variable(ch: char) -> bool {
     ch.is_ascii_alphabetic()
         || ('α'..='ω').contains(&ch)
         || matches!(ch, 'ϵ' | 'ϑ' | 'ϰ' | 'ϕ' | 'ϱ' | 'ϖ' | 'ϝ' | 'ı' | 'ȷ')
+}
+
+// TeX appends a math-character italic correction when the noad has no subscript.
+// Script nodes already account for that correction while attaching the script slot, so
+// row packing must add it only for bare default-math-italic variables.
+fn row_needs_math_italic_kern(node: &MathNode) -> bool {
+    match node {
+        MathNode::Atom(ch, class) => *class == AtomKind::Ord && is_default_math_variable(*ch),
+        MathNode::Symbol(name) => {
+            let class = symbol_class(name);
+            class == AtomKind::Ord
+                && symbol_char(name)
+                    .ok()
+                    .is_some_and(is_default_math_variable)
+        }
+        _ => false,
+    }
 }
 
 fn single_glyph(name: &str) -> Option<char> {

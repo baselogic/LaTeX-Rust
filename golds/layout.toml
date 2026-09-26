@@ -49,14 +49,14 @@ name = "ord-ord-ab"
 kind = "dims"
 style = "text"
 input = "ab"
-expect = "w=1.073 h=0.705 d=0.012"
+expect = "w=1.078 h=0.705 d=0.012"
 
 [[gold]]
 name = "ord-bin-text"
 kind = "dims"
 style = "text"
 input = "a+b"
-expect = "w=2.237444444444444444444444 h=0.705 d=0.04"
+expect = "w=2.242444444444444444444444 h=0.705 d=0.04"
 
 [[gold]]
 name = "ord-bin-script-no-med"
@@ -70,7 +70,7 @@ name = "ord-rel-text"
 kind = "dims"
 style = "text"
 input = "a=b"
-expect = "w=2.348555555555555555555555 h=0.705 d=0.012"
+expect = "w=2.353555555555555555555555 h=0.705 d=0.012"
 
 [[gold]]
 name = "bin-after-open"
@@ -84,7 +84,7 @@ name = "paren-row"
 kind = "dims"
 style = "text"
 input = "(a+b)"
-expect = "w=2.951444444444444444444444 h=0.736 d=0.196"
+expect = "w=2.956444444444444444444444 h=0.736 d=0.196"
 
 [[gold]]
 name = "frac-half-text"
@@ -280,7 +280,7 @@ name = "thin-space"
 kind = "dims"
 style = "text"
 input = "a\\,b"
-expect = "w=1.239666666666666666666666 h=0.705 d=0.012"
+expect = "w=1.244666666666666666666666 h=0.705 d=0.012"
 
 [[gold]]
 name = "hat-x"

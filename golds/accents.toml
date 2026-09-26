@@ -104,7 +104,7 @@ expect = "w=0.559 h=1.209 d=0.01"
 name = "widehat-xyz"
 kind = "dims"
 input = "\\widehat{x+y+z}"
-expect = "w=3.890888888888888888888888 h=1.232 d=0.22"
+expect = "w=3.925888888888888888888888 h=1.232 d=0.22"
 
 [[gold]]
 name = "widehat-xyz-svg"
@@ -118,13 +118,13 @@ lines = "0"
 name = "widetilde-xyz"
 kind = "dims"
 input = "\\widetilde{xyz}"
-expect = "w=1.562 h=1.124 d=0.22"
+expect = "w=1.597 h=1.124 d=0.22"
 
 [[gold]]
 name = "overline-xy"
 kind = "dims"
 input = "\\overline{x+y}"
-expect = "w=2.233444444444444444444444 h=0.869 d=0.22"
+expect = "w=2.258444444444444444444444 h=0.869 d=0.22"
 
 [[gold]]
 name = "overline-xy-svg"
@@ -138,7 +138,7 @@ lines = "0"
 name = "underline-abc"
 kind = "dims"
 input = "\\underline{abc}"
-expect = "w=1.487 h=0.705 d=0.323"
+expect = "w=1.492 h=0.705 d=0.323"
 
 [[gold]]
 name = "overrightarrow-AB"
@@ -238,13 +238,13 @@ expect = "w=0.72 h=1.1773 d=0.0"
 name = "cancel-xy"
 kind = "dims"
 input = "\\cancel{x+y}"
-expect = "w=2.233444444444444444444444 h=0.558 d=0.22"
+expect = "w=2.258444444444444444444444 h=0.558 d=0.22"
 
 [[gold]]
 name = "cancel-xy-lines"
 kind = "lines"
 input = "\\cancel{x+y}"
-expect = "x1=0.0 y1=-0.22 x2=2.233444444444444444444444 y2=0.558 t=0.068"
+expect = "x1=0.0 y1=-0.22 x2=2.258444444444444444444444 y2=0.558 t=0.068"
 
 [[gold]]
 name = "cancel-xy-svg"
@@ -264,7 +264,7 @@ expect = "x1=0.0 y1=0.479 x2=0.559 y2=-0.01 t=0.068"
 name = "xcancel-abc"
 kind = "lines"
 input = "\\xcancel{abc}"
-expect = "x1=0.0 y1=-0.012 x2=1.487 y2=0.705 t=0.068 | x1=0.0 y1=0.705 x2=1.487 y2=-0.012 t=0.068"
+expect = "x1=0.0 y1=-0.012 x2=1.492 y2=0.705 t=0.068 | x1=0.0 y1=0.705 x2=1.492 y2=-0.012 t=0.068"
 
 [[gold]]
 name = "xcancel-abc-svg"
