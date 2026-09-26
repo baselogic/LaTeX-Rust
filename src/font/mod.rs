@@ -44,6 +44,12 @@ pub struct GlyphMetrics {
     pub depth: Dim,
 }
 
+#[derive(Clone, Copy)]
+struct ScriptAlternateEntry {
+    glyph_id: u16,
+    alternates: [Option<u16>; 2],
+}
+
 /// Loaded math face.
 ///
 /// # Examples
@@ -60,6 +66,7 @@ pub struct MathFont {
     units_per_em: u16,
     ascender_fu: i16,
     descender_fu: i16,
+    script_alternates: Vec<ScriptAlternateEntry>,
 }
 
 impl MathFont {
@@ -89,17 +96,48 @@ impl MathFont {
         }
         let ascender_fu = face.ascender();
         let descender_fu = face.descender();
+        let mut script_alternates = Vec::new();
+        for glyph_id in 0..face.number_of_glyphs() {
+            let alternates = [
+                ssty_alternate_glyph_id(&face, glyph_id, 1),
+                ssty_alternate_glyph_id(&face, glyph_id, 2),
+            ];
+            if alternates.iter().any(Option::is_some) {
+                script_alternates.push(ScriptAlternateEntry {
+                    glyph_id,
+                    alternates,
+                });
+            }
+        }
         Ok(Self {
             raw,
             face,
             units_per_em,
             ascender_fu,
             descender_fu,
+            script_alternates,
         })
     }
 
     pub(crate) fn face(&self) -> &Face<'static> {
         &self.face
+    }
+
+    pub(crate) fn script_alternate_glyph_id(
+        &self,
+        glyph_id: u16,
+        script_level: u8,
+    ) -> Option<u16> {
+        let alternate_index = match script_level {
+            1 => 0,
+            2 => 1,
+            _ => return None,
+        };
+        let index = self
+            .script_alternates
+            .binary_search_by_key(&glyph_id, |entry| entry.glyph_id)
+            .ok()?;
+        self.script_alternates[index].alternates[alternate_index]
     }
 
     /// OpenType bytes this face was parsed from.
@@ -307,6 +345,43 @@ impl MathFont {
         }
         s
     }
+}
+
+fn ssty_alternate_glyph_id(
+    face: &Face<'_>,
+    glyph_id: u16,
+    script_level: u8,
+) -> Option<u16> {
+    let alternate_index = match script_level {
+        1 => 0,
+        2 => 1,
+        _ => return None,
+    };
+    let gsub = face.tables().gsub?;
+    let feature = gsub.features.find(ttf_parser::Tag::from_bytes(b"ssty"))?;
+    for lookup_index in feature.lookup_indices {
+        let Some(lookup) = gsub.lookups.get(lookup_index) else {
+            continue;
+        };
+        for subtable in lookup
+            .subtables
+            .into_iter::<ttf_parser::gsub::SubstitutionSubtable<'_>>()
+        {
+            let ttf_parser::gsub::SubstitutionSubtable::Alternate(alternate) = subtable else {
+                continue;
+            };
+            let Some(coverage_index) = alternate.coverage.get(ttf_parser::GlyphId(glyph_id)) else {
+                continue;
+            };
+            let Some(set) = alternate.alternate_sets.get(coverage_index) else {
+                continue;
+            };
+            if let Some(selected) = set.alternates.get(alternate_index) {
+                return Some(selected.0);
+            }
+        }
+    }
+    None
 }
 
 fn hex_byte(b: u8) -> String {
