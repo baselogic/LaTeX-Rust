@@ -7,3 +7,4 @@ Cargo.lock
 *.orig
 *.swp
 *~
+*.patch
