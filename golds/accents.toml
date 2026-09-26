@@ -12,7 +12,7 @@ expect = "(accent hat (atom Ord \"x\"))"
 name = "hat-x"
 kind = "dims"
 input = "\\hat{x}"
-expect = "w=0.559 h=1.154 d=0.01"
+expect = "w=0.569 h=1.154 d=0.01"
 
 [[gold]]
 name = "hat-x-svg"
@@ -26,7 +26,7 @@ lines = "0"
 name = "hat-f-italic"
 kind = "dims"
 input = "\\hat{f}"
-expect = "w=0.641 h=1.385 d=0.225"
+expect = "w=0.597 h=1.385 d=0.225"
 
 [[gold]]
 name = "check-x"
@@ -56,7 +56,7 @@ expect = "w=0.559 h=1.154 d=0.01"
 name = "tilde-x"
 kind = "dims"
 input = "\\tilde{x}"
-expect = "w=0.559 h=1.122 d=0.01"
+expect = "w=0.569 h=1.122 d=0.01"
 
 [[gold]]
 name = "bar-x"

@@ -996,6 +996,7 @@ impl Engine<'_> {
                 bx: self.place_under(b, acc, style),
             });
         }
+        let nucleus_width = hat_tilde_nucleus_width(&b, kind);
         let x_off = if stretchy {
             let extra = &b.width - &acc.width;
             &extra / &Dim::from_i64(2)
@@ -1003,9 +1004,13 @@ impl Engine<'_> {
             self.accent_x_off(&b, &acc, kind)
         };
         let raise = self.accent_raise(&b, &acc, style);
+        let mut placed = overlay_accent(b, acc, x_off, raise);
+        if let Some(width) = nucleus_width {
+            placed.width = width;
+        }
         Ok(Item {
             class: Some(AtomKind::Ord),
-            bx: overlay_accent(b, acc, x_off, raise),
+            bx: placed,
         })
     }
 
@@ -1969,6 +1974,21 @@ fn is_tex_accent(kind: AccentKind) -> bool {
             | AccentKind::Overbrace
             | AccentKind::Underbrace
     )
+}
+
+// TeX gives hat/tilde accent noads the horizontal width of their nucleus and lets the
+// accent overhang. A direct math-character nucleus includes its MATH italic correction.
+fn hat_tilde_nucleus_width(base: &MathBox, kind: AccentKind) -> Option<Dim> {
+    if !matches!(
+        kind,
+        AccentKind::Hat | AccentKind::WideHat | AccentKind::Tilde | AccentKind::WideTilde
+    ) {
+        return None;
+    }
+    Some(match &base.content {
+        BoxContent::Glyph { .. } => &base.width + &base.italic,
+        _ => base.width.clone(),
+    })
 }
 
 fn is_stretchy_accent(kind: AccentKind) -> bool {
