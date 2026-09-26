@@ -161,7 +161,7 @@ name = "subsup-x"
 kind = "dims"
 style = "text"
 input = "x_2^3"
-expect = "w=0.9758 h=0.8297 d=0.2688"
+expect = "w=0.9758 h=0.8588 d=0.2397"
 
 [[gold]]
 name = "sup-f2-italic"
@@ -231,7 +231,7 @@ name = "sum-scripts-text"
 kind = "dims"
 style = "text"
 input = "\\sum_{k=1}^{n}"
-expect = "w=2.3032 h=0.782 d=0.329"
+expect = "w=2.3032 h=0.782 d=0.302"
 
 [[gold]]
 name = "int-display"
@@ -245,7 +245,7 @@ name = "int-text"
 kind = "dims"
 style = "text"
 input = "\\int_0^1"
-expect = "w=1.36 h=0.8269 d=0.2674"
+expect = "w=1.36 h=0.8469 d=0.2474"
 
 [[gold]]
 name = "pmatrix"
