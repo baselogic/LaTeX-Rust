@@ -275,33 +275,43 @@ impl Engine<'_> {
     }
 
     fn glyph(&self, ch: char, style: MathStyle) -> Result<MathBox, Error> {
-        let g = self.font.glyph(ch)?;
+        let base = self.font.glyph(ch)?;
+        let glyph_id = self
+            .font
+            .script_alternate_glyph_id(base.glyph_id, style.script_level())
+            .unwrap_or(base.glyph_id);
+        let g = if glyph_id == base.glyph_id {
+            base
+        } else {
+            self.font.glyph_id(ch, glyph_id)?
+        };
         let s = self.params.scale(style);
-        let italic = self.font.italic_correction(g.glyph_id);
+        let italic = self.font.italic_correction(glyph_id);
         Ok(MathBox {
             width: &g.advance * &s,
             height: &g.height * &s,
             depth: &g.depth * &s,
             italic: &italic * &s,
             shift: Dim::zero(),
-            content: BoxContent::Glyph {
-                ch,
-                glyph_id: g.glyph_id,
-            },
+            content: BoxContent::Glyph { ch, glyph_id },
         })
     }
 
     fn glyph_id(&self, ch: char, gid: u16, style: MathStyle) -> Result<MathBox, Error> {
-        let g = self.font.glyph_id(ch, gid)?;
+        let glyph_id = self
+            .font
+            .script_alternate_glyph_id(gid, style.script_level())
+            .unwrap_or(gid);
+        let g = self.font.glyph_id(ch, glyph_id)?;
         let s = self.params.scale(style);
-        let italic = self.font.italic_correction(gid);
+        let italic = self.font.italic_correction(glyph_id);
         Ok(MathBox {
             width: &g.advance * &s,
             height: &g.height * &s,
             depth: &g.depth * &s,
             italic: &italic * &s,
             shift: Dim::zero(),
-            content: BoxContent::Glyph { ch, glyph_id: gid },
+            content: BoxContent::Glyph { ch, glyph_id },
         })
     }
 

@@ -42,7 +42,7 @@ name = "glyph-x-script"
 kind = "dims"
 style = "script"
 input = "x"
-expect = "w=0.3913 h=0.3353 d=0.007"
+expect = "w=0.4445 h=0.3619 d=0.007"
 
 [[gold]]
 name = "ord-ord-ab"
@@ -63,7 +63,7 @@ name = "ord-bin-script-no-med"
 kind = "dims"
 style = "script"
 input = "a+b"
-expect = "w=1.2551 h=0.4935 d=0.028"
+expect = "w=1.3811 h=0.5222 d=0.0322"
 
 [[gold]]
 name = "ord-rel-text"
@@ -91,7 +91,7 @@ name = "frac-half-text"
 kind = "dims"
 style = "text"
 input = "\\frac{1}{2}"
-expect = "w=0.3465 h=1.0323 d=0.585"
+expect = "w=0.3668 h=1.0519 d=0.585"
 
 [[gold]]
 name = "frac-half-display"
@@ -105,7 +105,7 @@ name = "frac-wide-num"
 kind = "dims"
 style = "text"
 input = "\\frac{a+b}{c+d}"
-expect = "w=1.2551 h=1.0785 d=0.613"
+expect = "w=1.3811 h=1.1072 d=0.6172"
 
 [[gold]]
 name = "sqrt-x-text"
@@ -126,56 +126,56 @@ name = "sqrt-n-x"
 kind = "dims"
 style = "text"
 input = "\\sqrt[3]{x}"
-expect = "w=1.35525 h=0.922 d=0.265"
+expect = "w=1.39155 h=0.922 d=0.265"
 
 [[gold]]
 name = "sup-x2-text"
 kind = "dims"
 style = "text"
 input = "x^2"
-expect = "w=0.9435 h=0.8108 d=0.01"
+expect = "w=0.9638 h=0.8297 d=0.01"
 
 [[gold]]
 name = "sup-x2-display"
 kind = "dims"
 style = "display"
 input = "x^2"
-expect = "w=0.9435 h=0.8108 d=0.01"
+expect = "w=0.9638 h=0.8297 d=0.01"
 
 [[gold]]
 name = "sup-x2-cramped"
 kind = "dims"
 style = "text-cramped"
 input = "x^2"
-expect = "w=0.9435 h=0.7028 d=0.01"
+expect = "w=0.9638 h=0.7217 d=0.01"
 
 [[gold]]
 name = "sub-x2"
 kind = "dims"
 style = "text"
 input = "x_2"
-expect = "w=0.9335 h=0.479 d=0.21"
+expect = "w=0.9538 h=0.479 d=0.21"
 
 [[gold]]
 name = "subsup-x"
 kind = "dims"
 style = "text"
 input = "x_2^3"
-expect = "w=0.9435 h=0.8108 d=0.2499"
+expect = "w=0.9638 h=0.8297 d=0.2688"
 
 [[gold]]
 name = "sup-f2-italic"
 kind = "dims"
 style = "text"
 input = "f^2"
-expect = "w=0.9715 h=0.8108 d=0.225"
+expect = "w=0.9918 h=0.8297 d=0.225"
 
 [[gold]]
 name = "left-frac-text"
 kind = "dims"
 style = "text"
 input = "\\left(\\frac{1}{2}\\right)"
-expect = "w=1.2465 h=1.223 d=0.683"
+expect = "w=1.2668 h=1.223 d=0.683"
 
 [[gold]]
 name = "left-frac-display"
@@ -224,28 +224,28 @@ name = "sum-limits-display"
 kind = "dims"
 style = "display"
 input = "\\sum_{k=1}^{n}"
-expect = "w=1.2236 h=1.5613 d=1.5765"
+expect = "w=1.3272 h=1.5879 d=1.608"
 
 [[gold]]
 name = "sum-scripts-text"
 kind = "dims"
 style = "text"
 input = "\\sum_{k=1}^{n}"
-expect = "w=2.1876 h=0.782 d=0.2975"
+expect = "w=2.2912 h=0.782 d=0.329"
 
 [[gold]]
 name = "int-display"
 kind = "dims"
 style = "display"
 input = "\\int_0^1"
-expect = "w=1.9465 h=1.429 d=0.917"
+expect = "w=2.006 h=1.429 d=0.917"
 
 [[gold]]
 name = "int-text"
 kind = "dims"
 style = "text"
 input = "\\int_0^1"
-expect = "w=1.2885 h=0.8073 d=0.2471"
+expect = "w=1.348 h=0.8269 d=0.2674"
 
 [[gold]]
 name = "pmatrix"
