@@ -987,7 +987,10 @@ impl Engine<'_> {
         }
         let mut acc = self.accent_glyph(kind, style)?;
         let stretchy = is_stretchy_accent(kind);
-        if stretchy {
+        let hat_tilde = is_hat_tilde_accent(kind);
+        if matches!(kind, AccentKind::WideHat | AccentKind::WideTilde) {
+            acc = self.wide_hat_tilde_glyph(acc, &b.width, kind, style)?;
+        } else if stretchy {
             acc = self.stretch_h(acc, &b.width, style)?;
         }
         if is_under_accent(kind) {
@@ -997,13 +1000,19 @@ impl Engine<'_> {
             });
         }
         let nucleus_width = hat_tilde_nucleus_width(&b, kind);
-        let x_off = if stretchy {
+        let x_off = if hat_tilde {
+            self.hat_tilde_accent_x_off(&b, &acc, style)
+        } else if stretchy {
             let extra = &b.width - &acc.width;
             &extra / &Dim::from_i64(2)
         } else {
             self.accent_x_off(&b, &acc, kind)
         };
-        let raise = self.accent_raise(&b, &acc, style);
+        let raise = if hat_tilde {
+            self.hat_tilde_accent_raise(&b, style)
+        } else {
+            self.accent_raise(&b, &acc, style)
+        };
         let mut placed = overlay_accent(b, acc, x_off, raise);
         if let Some(width) = nucleus_width {
             placed.width = width;
@@ -1023,6 +1032,74 @@ impl Engine<'_> {
         Err(Error::Unsupported {
             what: format!("accent {}", kind.gold()),
         })
+    }
+
+    // LR-WIDE-ACCENT-001: STIX exposes wide hat/tilde variants from the combining
+    // U+0302/U+0303 constructions, not from the spacing glyph used for the fixed accent.
+    // Keep that fixed glyph as the smallest fallback and choose the widest font variant
+    // that still fits the nucleus; do not geometrically scale a glyph to force a fit.
+    fn wide_hat_tilde_glyph(
+        &self,
+        fixed: MathBox,
+        target_width: &Dim,
+        kind: AccentKind,
+        style: MathStyle,
+    ) -> Result<MathBox, Error> {
+        let seed_ch = match kind {
+            AccentKind::WideHat => '\u{0302}',
+            AccentKind::WideTilde => '\u{0303}',
+            _ => return Ok(fixed),
+        };
+        let seed = self.font.glyph(seed_ch)?;
+        let mut selected = fixed;
+        let mut selected_width = selected.width.clone();
+        for glyph_id in self.font.horizontal_variants(seed.glyph_id) {
+            if glyph_id == seed.glyph_id {
+                continue;
+            }
+            let candidate = self.glyph_id(seed_ch, glyph_id, style)?;
+            if candidate.width.is_zero() {
+                continue;
+            }
+            let fits = candidate
+                .width
+                .cmp(target_width)
+                .is_some_and(|ordering| ordering != Ordering::Greater);
+            let wider = candidate
+                .width
+                .cmp(&selected_width)
+                .is_some_and(|ordering| ordering == Ordering::Greater);
+            if fits && wider {
+                selected_width = candidate.width.clone();
+                selected = candidate;
+            }
+        }
+        Ok(selected)
+    }
+
+    // OpenType MATH places top accents by TopAccentAttachment, with the advance center
+    // as the fallback, and applies the current math-style scale to attachment coordinates.
+    fn hat_tilde_accent_x_off(
+        &self,
+        base: &MathBox,
+        acc: &MathBox,
+        style: MathStyle,
+    ) -> Dim {
+        let scale = self.params.scale(style);
+        let two = Dim::from_i64(2);
+        let base_att = single_glyph_id(base)
+            .and_then(|glyph_id| self.font.top_accent_attachment(glyph_id))
+            .map_or_else(|| &base.width / &two, |value| value * &scale);
+        let acc_att = single_glyph_id(acc)
+            .and_then(|glyph_id| self.font.top_accent_attachment(glyph_id))
+            .map_or_else(|| &acc.width / &two, |value| value * &scale);
+        &base_att - &acc_att
+    }
+
+    // AccentBaseHeight is the largest base ink height that needs no vertical raise.
+    fn hat_tilde_accent_raise(&self, base: &MathBox, style: MathStyle) -> Dim {
+        let base_height = &self.params.accent_base_height * &self.params.scale(style);
+        (&base.height - &base_height).clamp_nonneg()
     }
 
     fn cancelto(&self, value: &MathNode, expr: &MathNode, style: MathStyle) -> Result<Item, Error> {
@@ -1934,6 +2011,29 @@ fn overlay_accent(base: MathBox, acc: MathBox, x_off: Dim, raise: Dim) -> MathBo
     }
 }
 
+fn single_glyph_id(b: &MathBox) -> Option<u16> {
+    match &b.content {
+        BoxContent::Glyph { glyph_id, .. } => Some(*glyph_id),
+        BoxContent::HList(children) | BoxContent::VList(children) => {
+            let mut found = None;
+            for child in children {
+                if matches!(&child.content, BoxContent::Empty | BoxContent::Kern(_)) {
+                    continue;
+                }
+                let glyph_id = single_glyph_id(child)?;
+                if found.replace(glyph_id).is_some() {
+                    return None;
+                }
+            }
+            found
+        }
+        BoxContent::Color(_, inner)
+        | BoxContent::BackColor(_, inner)
+        | BoxContent::Frame { inner, .. } => single_glyph_id(inner),
+        _ => None,
+    }
+}
+
 fn first_glyph_id(b: &MathBox) -> Option<u16> {
     match &b.content {
         BoxContent::Glyph { glyph_id, .. } => Some(*glyph_id),
@@ -1978,6 +2078,13 @@ fn is_tex_accent(kind: AccentKind) -> bool {
 
 // TeX gives hat/tilde accent noads the horizontal width of their nucleus and lets the
 // accent overhang. A direct math-character nucleus includes its MATH italic correction.
+fn is_hat_tilde_accent(kind: AccentKind) -> bool {
+    matches!(
+        kind,
+        AccentKind::Hat | AccentKind::WideHat | AccentKind::Tilde | AccentKind::WideTilde
+    )
+}
+
 fn hat_tilde_nucleus_width(base: &MathBox, kind: AccentKind) -> Option<Dim> {
     if !matches!(
         kind,
