@@ -517,7 +517,9 @@ impl Engine<'_> {
         } else {
             &self.params.radical_vertical_gap * &s
         };
-        let needed = &rad_b.height + &rad_b.depth + &gap + &thick + &extra;
+        // LR-RADICAL-VARIANT-002: RadicalExtraAscender reserves whitespace above the
+        // finished radical; it is not part of the minimum span passed to MathVariants.
+        let needed = &rad_b.height + &rad_b.depth + &gap + &thick;
         let surd = self.sized_glyph('√', &needed, style)?;
         let bar = MathBox::rule(rad_b.width.clone(), thick.clone(), Dim::zero())
             .with_shift(&rad_b.height + &gap);
