@@ -2020,7 +2020,7 @@ impl Engine<'_> {
                     extras.push(RowKind::Hline);
                 }
                 EnvRow::Intertext(n) => {
-                    extras.push(RowKind::Intertext(self.layout(n, MathStyle::Text)?));
+                    extras.push(RowKind::Intertext(Box::new(self.layout(n, MathStyle::Text)?)));
                 }
                 EnvRow::Cells { cells, .. } => {
                     let mut rboxes = Vec::new();
@@ -2060,7 +2060,7 @@ impl Engine<'_> {
                     if !packed.is_empty() {
                         packed.push(sep_row(row_sep.clone()));
                     }
-                    packed.push(t);
+                    packed.push(*t);
                 }
                 RowKind::Cells => {
                     if !packed.is_empty() {
@@ -2106,7 +2106,7 @@ impl Engine<'_> {
                     });
                 }
                 EnvRow::Intertext(n) => {
-                    kinds.push(RowKind::Intertext(self.layout(n, MathStyle::Text)?));
+                    kinds.push(RowKind::Intertext(Box::new(self.layout(n, MathStyle::Text)?)));
                 }
                 EnvRow::Cells { cells, .. } => {
                     let node = if cells.len() == 1 {
@@ -2127,7 +2127,7 @@ impl Engine<'_> {
                 packed.push(sep_row(row_sep.clone()));
             }
             match kind {
-                RowKind::Intertext(t) => packed.push(t),
+                RowKind::Intertext(t) => packed.push(*t),
                 RowKind::Cells => {
                     let body = align_in(bodies[bi].clone(), &max_w, ColSpec::Center);
                     let num = match self.take_number() {
@@ -2232,7 +2232,7 @@ impl Engine<'_> {
             match row {
                 EnvRow::Hline => kinds.push(RowKind::Hline),
                 EnvRow::Intertext(n) => {
-                    kinds.push(RowKind::Intertext(self.layout(n, MathStyle::Text)?));
+                    kinds.push(RowKind::Intertext(Box::new(self.layout(n, MathStyle::Text)?)));
                 }
                 EnvRow::Cells { cells, .. } => {
                     let mut rboxes = Vec::new();
@@ -2300,7 +2300,7 @@ impl Engine<'_> {
                     if !packed.is_empty() {
                         packed.push(sep_row(row_sep.clone()));
                     }
-                    packed.push(t);
+                    packed.push(*t);
                 }
                 RowKind::Cells => {
                     if !packed.is_empty()
@@ -2371,7 +2371,7 @@ fn shifted_hpack(children: Vec<MathBox>) -> MathBox {
 enum RowKind {
     Cells,
     Hline,
-    Intertext(MathBox),
+    Intertext(Box<MathBox>),
 }
 
 fn data_cells(rows: &[EnvRow]) -> Result<Vec<Vec<MathNode>>, Error> {
