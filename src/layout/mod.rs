@@ -28,11 +28,18 @@ pub enum BoxContent {
     /// Solid rule (fraction bar, vinculum). No glyph.
     Rule,
     /// A single character whose metrics came from the math font.
+    ///
+    /// Build with [`BoxContent::glyph`]; the variant is non-exhaustive.
+    #[non_exhaustive]
     Glyph {
         /// Character.
         ch: char,
         /// OpenType glyph id.
         glyph_id: u16,
+        /// Outline scale relative to the em: 1 at text size, smaller at script
+        /// and scriptscript size. Box dimensions are already scaled; renderers
+        /// draw the outline at this factor.
+        scale: Dim,
     },
     /// Horizontal list. Width is the sum of children.
     HList(Vec<MathBox>),
@@ -99,6 +106,18 @@ pub struct MathBox {
     pub content: BoxContent,
 }
 
+impl BoxContent {
+    /// Glyph content drawn at `scale` times the em (1 for text size).
+    #[must_use]
+    pub fn glyph(ch: char, glyph_id: u16, scale: Dim) -> Self {
+        Self::Glyph {
+            ch,
+            glyph_id,
+            scale,
+        }
+    }
+}
+
 impl MathBox {
     /// Zero-size empty box.
     #[must_use]
@@ -148,10 +167,7 @@ impl MathBox {
             depth: g.depth,
             italic: font.italic_correction(g.glyph_id),
             shift: Dim::zero(),
-            content: BoxContent::Glyph {
-                ch,
-                glyph_id: g.glyph_id,
-            },
+            content: BoxContent::glyph(ch, g.glyph_id, Dim::one()),
         })
     }
 

@@ -86,9 +86,12 @@ fn emit(
     let baseline = parent_baseline - &(bx.shift.clone() * em_px);
     match &bx.content {
         BoxContent::Empty | BoxContent::Kern(_) => Ok(()),
-        BoxContent::Glyph { glyph_id, .. } => {
+        BoxContent::Glyph {
+            glyph_id, scale, ..
+        } => {
             let tris = glyph_tris(font, *glyph_id, cache)?;
-            out.push(mesh_shape(tris, origin_x, &baseline, fu_px, fill));
+            let k = fu_px * scale;
+            out.push(mesh_shape(tris, origin_x, &baseline, &k, fill));
             Ok(())
         }
         BoxContent::Rule => {

@@ -309,10 +309,7 @@ fn missing_glyph_id_is_err() {
         depth: Dim::zero(),
         italic: Dim::zero(),
         shift: Dim::zero(),
-        content: BoxContent::Glyph {
-            ch: 'x',
-            glyph_id: 65535,
-        },
+        content: BoxContent::glyph('x', 65535, Dim::one()),
     };
     let err = shapes(&bx, &font, &EguiOptions::new(), Pos2::ZERO, 1.0).expect_err("missing");
     assert!(err.to_string().contains("missing glyph"), "{err}");

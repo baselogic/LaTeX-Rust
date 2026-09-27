@@ -348,10 +348,7 @@ impl Engine<'_> {
             depth: &g.depth * &s,
             italic: &italic * &s,
             shift: Dim::zero(),
-            content: BoxContent::Glyph {
-                ch,
-                glyph_id: g.glyph_id,
-            },
+            content: BoxContent::glyph(ch, g.glyph_id, s),
         })
     }
 
@@ -365,7 +362,7 @@ impl Engine<'_> {
             depth: &g.depth * &s,
             italic: &italic * &s,
             shift: Dim::zero(),
-            content: BoxContent::Glyph { ch, glyph_id: gid },
+            content: BoxContent::glyph(ch, gid, s),
         })
     }
 
@@ -741,7 +738,7 @@ impl Engine<'_> {
     }
 
     fn stretch_h(&self, base: MathBox, needed: &Dim, style: MathStyle) -> Result<MathBox, Error> {
-        let BoxContent::Glyph { ch, glyph_id } = base.content else {
+        let BoxContent::Glyph { ch, glyph_id, .. } = base.content else {
             return Ok(base);
         };
         let mut best = base;

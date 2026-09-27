@@ -170,7 +170,11 @@ fn emit(
     let baseline = parent_baseline - &(bx.shift.clone() * em_pt);
     match &bx.content {
         BoxContent::Empty | BoxContent::Kern(_) => Ok(()),
-        BoxContent::Glyph { ch, glyph_id } => {
+        BoxContent::Glyph {
+            ch,
+            glyph_id,
+            scale,
+        } => {
             let d = if let Some(s) = cache.get(glyph_id) {
                 s.clone()
             } else {
@@ -181,8 +185,9 @@ fn emit(
                 cache.insert(*glyph_id, s.clone());
                 s
             };
-            let sx = fu_pt.to_svg_string();
-            let nsx = (-fu_pt.clone()).to_svg_string();
+            let k = fu_pt * scale;
+            let sx = k.to_svg_string();
+            let nsx = (-k).to_svg_string();
             out.push_str(&format!(
                 r#"<path d="{d}" transform="translate({} {}) scale({sx} {nsx})"/>"#,
                 origin_x.to_svg_string(),
