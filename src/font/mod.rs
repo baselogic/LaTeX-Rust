@@ -9,7 +9,7 @@ use crate::error::{Error, FontError};
 ///
 /// A `static` rather than a `const`, so that the font's bytes are placed in the binary once and every use refers
 /// to that one copy. A `const` is inlined at each use site, and a crate that reads these bytes as well as calling
-/// [`MathFont::stix`] carries the 839 KB font twice.
+/// [`MathFont::stix_two_math`] carries the 839 KB font twice.
 pub static STIX_TWO_MATH_OTF: &[u8] =
     include_bytes!("../../fonts/stix-two-math/STIXTwoMath-Regular.otf");
 
@@ -109,7 +109,7 @@ impl MathFont {
     /// rather than re-parsing [`Self::bytes`] guarantees that the glyph ids in
     /// [`BoxContent::Glyph`](crate::BoxContent::Glyph) are resolved against the
     /// same face, parsed by the same version of `ttf-parser`, that produced
-    /// them. The crate re-exports [`ttf_parser`](crate::ttf_parser) so that a
+    /// them. The crate re-exports [`ttf_parser`] so that a
     /// consumer can name this type without pinning the version itself.
     ///
     /// # Examples

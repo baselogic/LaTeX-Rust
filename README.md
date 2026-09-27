@@ -46,7 +46,7 @@ Inventory: [capabilities](documents/CAPABILITIES.md). Patches: [CONTRIBUTING.md]
 
 ```toml
 [dependencies]
-latex-rust = "1.0"
+latex-rust = "2.0"
 ```
 
 ```rust

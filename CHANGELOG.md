@@ -1,5 +1,61 @@
 # Changelog
 
+## [2.0.0] — 2026-09-27
+
+This release fixes the eight defects Tom Clark reported while integrating
+latex-rust into IronLAB (issues #1–#7 and #11). Several of them change what the
+renderer draws, so many golds were re-recorded, each in its own commit next to
+the fix that moved it.
+
+### Breaking changes
+
+- `BoxContent::Glyph` has a new `scale: Dim` field, the factor the layout engine
+  applied to the glyph's metrics. The variant is now `#[non_exhaustive]`, so
+  match it with `BoxContent::Glyph { ch, glyph_id, .. }` and build it with the
+  new `BoxContent::glyph(ch, glyph_id, scale)`. (#1)
+- Parsing and layout now return `Err` for input nested deeper than
+  `DEFAULT_MAX_NESTING_DEPTH` (32). Before, such input overflowed the stack and
+  aborted the process. (#6)
+- Output changes: variable letters are drawn in math italic, math-mode `-` is
+  drawn as U+2212, script glyphs are drawn smaller, and diacritic accents sit
+  lower. Code that pinned the old dimensions or images will see new values.
+
+### Fixed
+
+- Superscripts, subscripts and limits are drawn at script size in the SVG, PNG
+  and egui renderers. Before, they were laid out at script size but drawn at
+  full size. (#1)
+- Unstyled Latin letters and lowercase Greek letters are set in math italic, as
+  TeX does. Digits, uppercase Greek, `\mathrm`, `\text` and operator names stay
+  upright. (#2)
+- A math-mode `-` is drawn as U+2212 MINUS SIGN instead of the hyphen. It keeps
+  the `Bin` class, and `-` inside `\text{...}` is still a hyphen. (#3)
+- Font switches such as `\mathrm` reach nested subformulae (script bases,
+  fractions, radicals). (#4)
+- Diacritic accents (`\hat`, `\dot`, `\bar` and the rest) are placed by the TeX
+  rule, lowering them by the font's accent base height. (#5)
+- Deeply nested input returns `Err` instead of aborting the process. (#6)
+- `STIX_TWO_MATH_OTF` is a `static`, so the font is linked into a binary once
+  rather than once per use. (#11)
+
+### Added
+
+- `BoxContent::glyph(ch, glyph_id, scale)`. (#1)
+- `Dim::as_ratio()` returns a `Dim`'s exact value as a numerator and
+  denominator. (#7)
+- `MathFont::face()` exposes the parsed OpenType face, and the crate re-exports
+  `ttf_parser` so consumers can name its types. (#7)
+- `ParseOptions`, `parse_with_options`, `layout_with_max_depth` and
+  `DEFAULT_MAX_NESTING_DEPTH` let embedders choose the nesting limit. (#6)
+- `tests/script_scale.rs` checks script glyph size in every backend, and new
+  golds pin `a-b` to U+2212. (#1, #3)
+
+### Thanks
+
+Tom Clark (IronLAB) reported all eight issues with reproductions and proposed
+fixes, and contributed the pull requests for #4, #7 and #11 and the first depth
+limit for #6.
+
 ## [1.0.4] — 2026-09-20
 
 Clippy debt clear (`-D warnings`): `RowKind::Intertext` boxed to shrink enum size.
