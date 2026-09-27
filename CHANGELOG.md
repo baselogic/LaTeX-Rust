@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.1.0] — 2026-09-27
+
+### Added
+
+- Added `layout_with_em_size_pt` and `layout_with_numbering_and_em_size_pt` for callers that need correct normalization of absolute TeX dimensions at a known physical math em size.
+
+### Fixed
+
+- Prevent exact-rational decimal formatting from overflowing while processing large remainders.
+- Reject egui tessellation vertex and index values that do not fit in `u32` instead of truncating them.
+- Use mathematical italic Unicode characters for default bare math variables without overriding explicit text styles.
+- Correct fixed and wide hat/tilde variant selection, OpenType MATH attachment, vertical placement, nucleus width, and nested-accent geometry.
+- Correct radical variant selection, surd/rule geometry, and radical-degree positioning.
+- Restore physical `\nulldelimiterspace` around delimiter-less fractions.
+- Apply TeX delimiter factor/shortfall sizing and MATH-axis centering.
+- Correct display large-operator axis alignment, limit placement, and branch recentering.
+- Restore ordinary-row math italic correction without duplicating scripted-nucleus correction.
+- Apply OpenType `ssty` alternates and the correct glyph scale in Script and ScriptScript styles.
+- Scale `SpaceAfterScript` in the parent math style.
+- Apply the full OpenType MATH vertical constraints for paired subscripts and superscripts.
+- Correct AMSMath matrix, cases, aligned, and substack layout geometry.
+- Correct display integral `\nolimits` script geometry, including MATH-axis centering, baseline-drop constraints, and italic-correction anchoring.
+
 ## [1.0.4] — 2026-09-20
 
 Clippy debt clear (`-D warnings`): `RowKind::Intertext` boxed to shrink enum size.

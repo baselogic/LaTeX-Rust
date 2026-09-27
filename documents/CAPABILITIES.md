@@ -1,8 +1,8 @@
 # latex-rust — Capabilities
-**Version:** 1.0.2  
-**Date:** 2026-09-04  
+**Version:** 1.1.0<br>
+**Date:** 2026-09-27<br>
 **License:** MIT OR Apache-2.0  
-**Status:** Public crate 1.0.2 (SVG / PNG / egui; golds green; in-tree `Dim`)  
+**Status:** 1.1.0 (SVG / PNG / egui; golds green; in-tree `Dim`)
 
 > Pure Rust LaTeX math renderer. No JavaScript. No webview. No runtime dependencies.  
 > Surpasses MathJax and KaTeX in correctness, performance, and platform coverage.
