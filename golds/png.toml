@@ -26,8 +26,8 @@ kind = "png"
 input = "\\sqrt{x}"
 dpi = "144"
 width_px = "33"
-height_px = "29"
-sha256 = "f939a71d32fee6bc5a66398169ce0d19ce60077f98e1758ddacfc1f1d31c661d"
+height_px = "31"
+sha256 = "3a5d73053fe8299f95f2cff62aef34d2bc8cd47f251775a7882ac0160964b2ff"
 
 [[gold]]
 name = "sup-x2-144"
