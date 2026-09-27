@@ -238,7 +238,7 @@ name = "int-display"
 kind = "dims"
 style = "display"
 input = "\\int_0^1"
-expect = "w=2.018 h=1.429 d=0.917"
+expect = "w=1.4283 h=1.6679 d=1.0841"
 
 [[gold]]
 name = "int-text"
