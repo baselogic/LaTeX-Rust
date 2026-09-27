@@ -72,13 +72,13 @@ pub use font::{
     GlyphMetrics, MathFont, STIX_TWO_MATH_NAME, STIX_TWO_MATH_OTF, STIX_TWO_MATH_SHA256,
 };
 pub use layout::{
-    layout, layout_with_numbering, BoxContent, MathBox, MathParams, MathStyle, NumberFormat,
-    NumberStyle, NumberingConfig, NumberingState,
+    layout, layout_with_max_depth, layout_with_numbering, BoxContent, MathBox, MathParams,
+    MathStyle, NumberFormat, NumberStyle, NumberingConfig, NumberingState,
 };
 pub use parser::{
-    format_tokens, parse, parse_with_colors, preprocess, tokenize, AccentKind, AtomKind, ColSpec,
-    DelimSize, Delimiter, EnvRow, EqNumber, IntegralKind, MathNode, MatrixStyle, PhantomKind,
-    SpaceKind, TextStyle, Token, MAX_NESTING_DEPTH,
+    format_tokens, parse, parse_with_colors, parse_with_options, preprocess, tokenize, AccentKind,
+    AtomKind, ColSpec, DelimSize, Delimiter, EnvRow, EqNumber, IntegralKind, MathNode, MatrixStyle,
+    ParseOptions, PhantomKind, SpaceKind, TextStyle, Token, DEFAULT_MAX_NESTING_DEPTH,
 };
 #[cfg(feature = "egui")]
 pub use render::egui::{latex_to_shapes, paint_egui, shapes};

@@ -6,7 +6,7 @@ mod numbering;
 mod space;
 mod style;
 
-pub use engine::{layout, layout_with_numbering};
+pub use engine::{layout, layout_with_max_depth, layout_with_numbering};
 pub use metrics::MathParams;
 pub use numbering::{NumberFormat, NumberStyle, NumberingConfig, NumberingState};
 pub use style::MathStyle;

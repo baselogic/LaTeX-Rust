@@ -13,7 +13,7 @@ use crate::layout::numbering::NumberingState;
 use crate::layout::space::{atom_space_mu, convert_bin, space_width};
 use crate::layout::style::MathStyle;
 use crate::layout::{BoxContent, MathBox};
-use crate::parser::MAX_NESTING_DEPTH;
+use crate::parser::DEFAULT_MAX_NESTING_DEPTH;
 use crate::parser::{
     AccentKind, AtomKind, ColSpec, DelimSize, Delimiter, EnvRow, IntegralKind, MathNode,
     MatrixStyle, PhantomKind, SpaceKind, TextStyle,
@@ -91,6 +91,47 @@ pub fn layout_with_numbering(
     style: MathStyle,
     state: &mut NumberingState,
 ) -> Result<MathBox, Error> {
+    layout_impl(node, font, style, state, DEFAULT_MAX_NESTING_DEPTH)
+}
+
+/// Lay out with an explicit nesting limit instead of
+/// [`DEFAULT_MAX_NESTING_DEPTH`](crate::DEFAULT_MAX_NESTING_DEPTH).
+///
+/// Use the same limit given to [`ParseOptions::with_max_depth`](crate::ParseOptions::with_max_depth),
+/// so that every tree the parser accepts can also be laid out.
+///
+/// # Errors
+///
+/// Same as [`layout`]. A tree nesting deeper than `max_depth` returns
+/// [`Error::Unsupported`].
+///
+/// # Examples
+///
+/// ```
+/// use latex_rust::{layout_with_max_depth, parse, MathFont, MathStyle};
+///
+/// let ast = parse(r"\frac{1}{2}").unwrap();
+/// let font = MathFont::stix_two_math().unwrap();
+/// assert!(layout_with_max_depth(&ast, &font, MathStyle::Text, 64).is_ok());
+/// assert!(layout_with_max_depth(&ast, &font, MathStyle::Text, 1).is_err());
+/// ```
+pub fn layout_with_max_depth(
+    node: &MathNode,
+    font: &MathFont,
+    style: MathStyle,
+    max_depth: usize,
+) -> Result<MathBox, Error> {
+    let mut state = NumberingState::default();
+    layout_impl(node, font, style, &mut state, max_depth)
+}
+
+fn layout_impl(
+    node: &MathNode,
+    font: &MathFont,
+    style: MathStyle,
+    state: &mut NumberingState,
+    max_depth: usize,
+) -> Result<MathBox, Error> {
     let params = MathParams::from_font(font)?;
     let start = state.collect(node);
     Engine {
@@ -99,6 +140,7 @@ pub fn layout_with_numbering(
         numbers: state,
         idx: Cell::new(start),
         depth: Cell::new(0),
+        max_depth,
     }
     .layout(node, style)
 }
@@ -108,8 +150,10 @@ struct Engine<'a> {
     params: MathParams,
     numbers: &'a NumberingState,
     idx: Cell<usize>,
-    /// Current nesting depth, bounded by [`MAX_NESTING_DEPTH`].
+    /// Current nesting depth, bounded by `max_depth`.
     depth: Cell<usize>,
+    /// Deepest nesting accepted.
+    max_depth: usize,
 }
 
 struct Item {
@@ -122,17 +166,16 @@ impl Engine<'_> {
         Ok(self.item(node, style)?.bx)
     }
 
-    /// Lay out `node` one level deeper, refusing to descend past
-    /// [`MAX_NESTING_DEPTH`].
+    /// Lay out `node` one level deeper, refusing to descend past `max_depth`.
     ///
     /// `parse` bounds the depth of any tree it builds, so this catches only a
     /// tree assembled by hand. It exists because `layout` is public and must
     /// not overflow the caller's stack whatever it is handed.
     fn item(&self, node: &MathNode, style: MathStyle) -> Result<Item, Error> {
         let depth = self.depth.get();
-        if depth >= MAX_NESTING_DEPTH {
+        if depth >= self.max_depth {
             return Err(Error::Unsupported {
-                what: format!("tree nests deeper than {MAX_NESTING_DEPTH} levels"),
+                what: format!("tree nests deeper than {} levels", self.max_depth),
             });
         }
         self.depth.set(depth + 1);
@@ -1260,7 +1303,9 @@ impl Engine<'_> {
                     extras.push(RowKind::Hline);
                 }
                 EnvRow::Intertext(n) => {
-                    extras.push(RowKind::Intertext(Box::new(self.layout(n, MathStyle::Text)?)));
+                    extras.push(RowKind::Intertext(Box::new(
+                        self.layout(n, MathStyle::Text)?,
+                    )));
                 }
                 EnvRow::Cells { cells, .. } => {
                     let mut rboxes = Vec::new();
@@ -1346,7 +1391,9 @@ impl Engine<'_> {
                     });
                 }
                 EnvRow::Intertext(n) => {
-                    kinds.push(RowKind::Intertext(Box::new(self.layout(n, MathStyle::Text)?)));
+                    kinds.push(RowKind::Intertext(Box::new(
+                        self.layout(n, MathStyle::Text)?,
+                    )));
                 }
                 EnvRow::Cells { cells, .. } => {
                     let node = if cells.len() == 1 {
@@ -1472,7 +1519,9 @@ impl Engine<'_> {
             match row {
                 EnvRow::Hline => kinds.push(RowKind::Hline),
                 EnvRow::Intertext(n) => {
-                    kinds.push(RowKind::Intertext(Box::new(self.layout(n, MathStyle::Text)?)));
+                    kinds.push(RowKind::Intertext(Box::new(
+                        self.layout(n, MathStyle::Text)?,
+                    )));
                 }
                 EnvRow::Cells { cells, .. } => {
                     let mut rboxes = Vec::new();

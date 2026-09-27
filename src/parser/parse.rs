@@ -14,23 +14,74 @@ use crate::dim::Dim;
 use crate::error::{Error, ParseError};
 use crate::symbols::{lookup, SymbolKind as CatalogKind};
 
-/// Deepest nesting [`parse`] and [`layout`](crate::layout()) accept.
+/// Default deepest nesting [`parse`] and [`layout`](crate::layout()) accept.
 ///
 /// Both recurse over the structure of the input, so their stack use grows with
-/// how deeply it nests. Past this depth they return an error rather than
+/// how deeply it nests. Past the limit they return an error rather than
 /// consume unbounded stack: input this deep is pathological, and a crate that
 /// refuses to invent a render should not abort the process either.
 ///
 /// The count is of parser recursion levels rather than of LaTeX constructs, and
-/// a braced argument costs two of them — one for the argument and one for the
-/// group — so this limit admits `\frac{1}{…}` nested 31 deep. Real mathematics
-/// rarely nests beyond five levels.
+/// a braced argument costs two of them (one for the argument and one for the
+/// group), so the default admits `\frac{1}{…}` nested about 15 deep. Real
+/// mathematics rarely nests beyond five levels.
 ///
-/// Measured on macOS with the deepest input the limit admits: an optimised
-/// build is comfortable, and an unoptimised build survives on the 2 MiB stack
-/// of a default `std::thread` worker but overflows on a 1 MiB one. A caller
-/// embedding this crate on a smaller stack should keep its own margin.
-pub const MAX_NESTING_DEPTH: usize = 64;
+/// Measured on Linux x86-64 with the deepest input 32 admits in each nesting
+/// shape, parsed, laid out, rendered to SVG and dropped: an optimised build
+/// survives on a 1 MiB stack (the `wasm32` default) with about three times the
+/// headroom needed, and an unoptimised build survives on the 2 MiB stack of a
+/// default `std::thread` worker with about twice. An unoptimised build on a
+/// 1 MiB stack is *not* covered: layout overflows there at about 14 nested
+/// radicals or scripts. A caller that knows it has more stack can raise the
+/// limit with [`ParseOptions::with_max_depth`] and
+/// [`layout_with_max_depth`](crate::layout_with_max_depth); a caller on a
+/// smaller stack should lower it.
+pub const DEFAULT_MAX_NESTING_DEPTH: usize = 32;
+
+/// Options for [`parse_with_options`].
+///
+/// # Examples
+///
+/// ```
+/// use latex_rust::{parse_with_options, ParseOptions};
+///
+/// let deep = "{".repeat(40) + "x" + &"}".repeat(40);
+/// assert!(parse_with_options(&deep, &ParseOptions::new()).is_err());
+/// let roomy = ParseOptions::new().with_max_depth(128);
+/// assert!(parse_with_options(&deep, &roomy).is_ok());
+/// ```
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub struct ParseOptions {
+    /// Deepest parser recursion accepted. Defaults to [`DEFAULT_MAX_NESTING_DEPTH`].
+    pub max_depth: usize,
+}
+
+impl Default for ParseOptions {
+    fn default() -> Self {
+        Self {
+            max_depth: DEFAULT_MAX_NESTING_DEPTH,
+        }
+    }
+}
+
+impl ParseOptions {
+    /// Options with every field at its default.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Set the deepest parser recursion accepted.
+    ///
+    /// Raising it past the default is safe only if the calling thread has the
+    /// stack for it; see [`DEFAULT_MAX_NESTING_DEPTH`].
+    #[must_use]
+    pub fn with_max_depth(mut self, max_depth: usize) -> Self {
+        self.max_depth = max_depth;
+        self
+    }
+}
 
 /// Parse a LaTeX math string into a [`MathNode`] using a fresh color table.
 ///
@@ -89,6 +140,29 @@ pub fn parse(input: &str) -> Result<MathNode, ParseError> {
 /// let _ = ast;
 /// ```
 pub fn parse_with_colors(input: &str) -> Result<(MathNode, ColorTable), ParseError> {
+    parse_with_options(input, &ParseOptions::default())
+}
+
+/// Parse a math string with explicit [`ParseOptions`], returning the AST and
+/// the color table after `\definecolor`.
+///
+/// # Errors
+///
+/// Same as [`parse`]. Input nesting deeper than `options.max_depth` returns
+/// [`ParseError::Malformed`].
+///
+/// # Examples
+///
+/// ```
+/// use latex_rust::{parse_with_options, ParseOptions};
+///
+/// let tight = ParseOptions::new().with_max_depth(4);
+/// assert!(parse_with_options(r"\frac{1}{\frac{1}{\frac{1}{2}}}", &tight).is_err());
+/// ```
+pub fn parse_with_options(
+    input: &str,
+    options: &ParseOptions,
+) -> Result<(MathNode, ColorTable), ParseError> {
     let sanitized = preprocess(input);
     let tokens = tokenize(&sanitized)?;
     let tokens = strip_fences(&tokens)?;
@@ -96,6 +170,7 @@ pub fn parse_with_colors(input: &str) -> Result<(MathNode, ColorTable), ParseErr
         tokens,
         pos: 0,
         depth: 0,
+        max_depth: options.max_depth,
         colors: ColorTable::new(),
     };
     let node = p.parse_list(Stop::eof())?;
@@ -174,8 +249,10 @@ struct Parser {
     tokens: Vec<Token>,
     pos: usize,
     colors: ColorTable,
-    /// Current nesting depth, bounded by [`MAX_NESTING_DEPTH`].
+    /// Current nesting depth, bounded by `max_depth`.
     depth: usize,
+    /// Deepest nesting accepted, from [`ParseOptions::max_depth`].
+    max_depth: usize,
 }
 
 impl Parser {
@@ -218,14 +295,15 @@ impl Parser {
         }
     }
 
-    /// Run `f` one level deeper, refusing to descend past [`MAX_NESTING_DEPTH`].
+    /// Run `f` one level deeper, refusing to descend past `max_depth`.
     fn nested<T>(
         &mut self,
         f: impl FnOnce(&mut Self) -> Result<T, ParseError>,
     ) -> Result<T, ParseError> {
-        if self.depth >= MAX_NESTING_DEPTH {
+        if self.depth >= self.max_depth {
             return Err(ParseError::Malformed(format!(
-                "input nests deeper than {MAX_NESTING_DEPTH} levels"
+                "input nests deeper than {} levels",
+                self.max_depth
             )));
         }
         self.depth += 1;
