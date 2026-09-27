@@ -190,8 +190,10 @@ struct Engine<'a> {
 
 struct ScriptPlacementParams {
     subscript_top_max: Dim,
+    subscript_baseline_drop_min: Dim,
     superscript_bottom_min: Dim,
     superscript_bottom_max_with_subscript: Dim,
+    superscript_baseline_drop_max: Dim,
 }
 
 impl ScriptPlacementParams {
@@ -210,10 +212,12 @@ impl ScriptPlacementParams {
         let fu = |value: i16| Dim::from_font_units(i64::from(value), units_per_em);
         Ok(Self {
             subscript_top_max: fu(constants.subscript_top_max().value),
+            subscript_baseline_drop_min: fu(constants.subscript_baseline_drop_min().value),
             superscript_bottom_min: fu(constants.superscript_bottom_min().value),
             superscript_bottom_max_with_subscript: fu(
                 constants.superscript_bottom_max_with_subscript().value,
             ),
+            superscript_baseline_drop_max: fu(constants.superscript_baseline_drop_max().value),
         })
     }
 }
@@ -335,14 +339,7 @@ impl Engine<'_> {
                 self.large_op('∏', lo.as_deref(), hi.as_deref(), style, true)
             }
             MathNode::Integral(k, lo, hi) => {
-                let ch = match k {
-                    IntegralKind::Int => '∫',
-                    IntegralKind::Iint => '∬',
-                    IntegralKind::Iiint => '∭',
-                    IntegralKind::Oint => '∮',
-                    IntegralKind::Oiint => '∯',
-                };
-                self.large_op(ch, lo.as_deref(), hi.as_deref(), style, false)
+                self.integral_op(*k, lo.as_deref(), hi.as_deref(), style)
             }
             MathNode::Limit(sub) => {
                 let op = self.text_run("lim", TextStyle::Rm, style)?;
@@ -749,30 +746,14 @@ impl Engine<'_> {
                 sub_shift = sub_shift.max(&(&sb.height - &max_top).clamp_nonneg());
             }
         }
-        if let (Some(sp), Some(sb)) = (&sup_laid, &sub_laid) {
-            let gap = &sup_shift + &sub_shift - &sp.depth - &sb.height;
-            let min_gap = &self.params.sub_superscript_gap_min * &s;
-            if matches!(gap.cmp(&min_gap), Some(Ordering::Less)) {
-                sub_shift = &sub_shift + (&min_gap - &gap);
-            }
-
-            if simple_character_nucleus {
-                let current_bottom = &sup_shift - &sp.depth;
-                let target_bottom =
-                    &self.script_placement.superscript_bottom_max_with_subscript * &s;
-                if matches!(current_bottom.cmp(&target_bottom), Some(Ordering::Less)) {
-                    let raise = &target_bottom - &current_bottom;
-                    let lowered_subscript = &sub_shift - &raise;
-                    if !matches!(
-                        lowered_subscript.cmp(&Dim::zero()),
-                        Some(Ordering::Less) | None
-                    ) {
-                        sup_shift = &sup_shift + &raise;
-                        sub_shift = lowered_subscript;
-                    }
-                }
-            }
-        }
+        self.enforce_paired_script_constraints(
+            sup_laid.as_ref(),
+            sub_laid.as_ref(),
+            &s,
+            simple_character_nucleus,
+            &mut sup_shift,
+            &mut sub_shift,
+        );
         let mut kids = vec![base.clone()];
         let mut width = base.width.clone();
         if sup_laid.is_some() && !base.italic.is_zero() {
@@ -818,6 +799,43 @@ impl Engine<'_> {
                 content: BoxContent::HList(kids),
             },
         })
+    }
+
+    fn enforce_paired_script_constraints(
+        &self,
+        sup: Option<&MathBox>,
+        sub: Option<&MathBox>,
+        scale: &Dim,
+        simple_character_nucleus: bool,
+        sup_shift: &mut Dim,
+        sub_shift: &mut Dim,
+    ) {
+        let (Some(sp), Some(sb)) = (sup, sub) else {
+            return;
+        };
+
+        let gap = &*sup_shift + &*sub_shift - &sp.depth - &sb.height;
+        let min_gap = &self.params.sub_superscript_gap_min * scale;
+        if matches!(gap.cmp(&min_gap), Some(Ordering::Less)) {
+            *sub_shift = &*sub_shift + (&min_gap - &gap);
+        }
+
+        if simple_character_nucleus {
+            let current_bottom = &*sup_shift - &sp.depth;
+            let target_bottom =
+                &self.script_placement.superscript_bottom_max_with_subscript * scale;
+            if matches!(current_bottom.cmp(&target_bottom), Some(Ordering::Less)) {
+                let raise = &target_bottom - &current_bottom;
+                let lowered_subscript = &*sub_shift - &raise;
+                if !matches!(
+                    lowered_subscript.cmp(&Dim::zero()),
+                    Some(Ordering::Less) | None
+                ) {
+                    *sup_shift = &*sup_shift + &raise;
+                    *sub_shift = lowered_subscript;
+                }
+            }
+        }
     }
 
     fn delimited(
@@ -1016,6 +1034,144 @@ impl Engine<'_> {
         let center = &(&op.height - &op.depth) / &Dim::from_i64(2);
         op.shift = &axis - &center;
         self.attach_large_op_limits(op, hi, lo, style)
+    }
+
+    fn integral_op(
+        &self,
+        kind: IntegralKind,
+        lo: Option<&MathNode>,
+        hi: Option<&MathNode>,
+        style: MathStyle,
+    ) -> Result<Item, Error> {
+        let ch = match kind {
+            IntegralKind::Int => '∫',
+            IntegralKind::Iint => '∬',
+            IntegralKind::Iiint => '∭',
+            IntegralKind::Oint => '∮',
+            IntegralKind::Oiint => '∯',
+        };
+        let min_h = if style.is_display() {
+            self.params.display_operator_min_height.clone() * self.params.scale(style)
+        } else {
+            Dim::zero()
+        };
+        let op = self.sized_glyph(ch, &min_h, style)?;
+
+        if !style.is_display() || (lo.is_none() && hi.is_none()) {
+            return self.attach_limits(op, hi, lo, style, false);
+        }
+
+        self.attach_integral_scripts(op, lo, hi, style)
+    }
+
+    fn attach_integral_scripts(
+        &self,
+        mut op: MathBox,
+        sub: Option<&MathNode>,
+        sup: Option<&MathNode>,
+        style: MathStyle,
+    ) -> Result<Item, Error> {
+        let scale = self.params.scale(style);
+        let script_style = style.into_script();
+        let sup_laid = match sup {
+            Some(node) => Some(self.layout(node, script_style.cramp())?),
+            None => None,
+        };
+        let sub_laid = match sub {
+            Some(node) => Some(self.layout(node, script_style)?),
+            None => None,
+        };
+
+        // LR-INTEGRAL-SCRIPTS-019: display integrals are enlarged no-limits operators.
+        // LuaTeX centers the boxed nucleus on the MATH axis, then constrains side-script
+        // baselines with the OpenType baseline-drop constants before applying the ordinary
+        // script constraints. The italic correction normalizes the operator width and shifts
+        // only the superscript branch horizontally; it is not a common positive script gap.
+        let axis = &self.params.axis_height * &scale;
+        let center = &(&op.height - &op.depth) / &Dim::from_i64(2);
+        op.shift = &axis - &center;
+        let base_height = (&op.height + &op.shift).clamp_nonneg();
+        let base_depth = (&op.depth - &op.shift).clamp_nonneg();
+
+        let mut sup_shift = sup_laid.as_ref().map_or_else(Dim::zero, |sup_box| {
+            let standard = if style.is_cramped() {
+                &self.params.superscript_shift_up_cramped * &scale
+            } else {
+                &self.params.superscript_shift_up * &scale
+            };
+            let from_base =
+                &base_height - &(&self.script_placement.superscript_baseline_drop_max * &scale);
+            let from_bottom =
+                &sup_box.depth + &(&self.script_placement.superscript_bottom_min * &scale);
+            standard.max(&from_base).max(&from_bottom)
+        });
+        let mut sub_shift = sub_laid.as_ref().map_or_else(Dim::zero, |sub_box| {
+            let standard = &self.params.subscript_shift_down * &scale;
+            let from_base =
+                &base_depth + &(&self.script_placement.subscript_baseline_drop_min * &scale);
+            let from_top = (&sub_box.height
+                - &(&self.script_placement.subscript_top_max * &scale))
+                .clamp_nonneg();
+            standard.max(&from_base).max(&from_top)
+        });
+        self.enforce_paired_script_constraints(
+            sup_laid.as_ref(),
+            sub_laid.as_ref(),
+            &scale,
+            true,
+            &mut sup_shift,
+            &mut sub_shift,
+        );
+
+        let italic = op.italic.clone();
+        let mut slot_width = Dim::zero();
+        let mut slot_height = Dim::zero();
+        let mut slot_depth = Dim::zero();
+        let mut slot_children = Vec::new();
+
+        if let Some(sup_box) = sup_laid {
+            let mut branch = sup_box.with_shift(sup_shift);
+            if !italic.is_zero() {
+                let vertical_shift = branch.shift.clone();
+                branch.shift = Dim::zero();
+                branch = MathBox::hpack(vec![MathBox::kern(italic.clone()), branch]);
+                branch.shift = vertical_shift;
+            }
+            slot_width = slot_width.max(&branch.width);
+            slot_height = slot_height.max(&(&branch.height + &branch.shift).clamp_nonneg());
+            slot_depth = slot_depth.max(&(&branch.depth - &branch.shift).clamp_nonneg());
+            slot_children.push(branch);
+        }
+        if let Some(sub_box) = sub_laid {
+            let branch = sub_box.with_shift(-sub_shift);
+            slot_width = slot_width.max(&branch.width);
+            slot_height = slot_height.max(&(&branch.height + &branch.shift).clamp_nonneg());
+            slot_depth = slot_depth.max(&(&branch.depth - &branch.shift).clamp_nonneg());
+            slot_children.push(branch);
+        }
+
+        let slot = MathBox {
+            width: slot_width,
+            height: slot_height,
+            depth: slot_depth,
+            italic: Dim::zero(),
+            shift: Dim::zero(),
+            content: BoxContent::Overlap(slot_children),
+        };
+        let after = &self.params.space_after_script * &scale;
+        let mut children = vec![op];
+        if !italic.is_zero() {
+            children.push(MathBox::kern(-italic));
+        }
+        children.push(slot);
+        if !after.is_zero() {
+            children.push(MathBox::kern(after));
+        }
+
+        Ok(Item {
+            class: Some(AtomKind::Op),
+            bx: shifted_hpack(children),
+        })
     }
 
     fn attach_large_op_limits(
