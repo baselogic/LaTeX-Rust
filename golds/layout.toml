@@ -252,14 +252,14 @@ name = "pmatrix"
 kind = "dims"
 style = "text"
 input = "\\begin{pmatrix}a&b\\\\c&d\\end{pmatrix}"
-expect = "w=2.520555555555555555555555 h=1.103 d=0.929"
+expect = "w=3.011 h=1.263 d=0.747"
 
 [[gold]]
 name = "cases"
 kind = "dims"
 style = "text"
 input = "\\begin{cases}a\\\\b\\end{cases}"
-expect = "w=0.927 h=0.983 d=0.929"
+expect = "w=1.013 h=1.458 d=0.942"
 
 [[gold]]
 name = "alpha"

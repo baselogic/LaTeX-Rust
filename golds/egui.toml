@@ -171,8 +171,8 @@ mesh_count = "6"
 rect_count = "0"
 vertex_count = "536"
 index_count = "1572"
-rect_width_px = "70.57555389404296875"
-rect_height_px = "56.895999908447265625"
+rect_width_px = "76.3079986572265625"
+rect_height_px = "56.279998779296875"
 
 [[gold]]
 name = "partial-frac"
