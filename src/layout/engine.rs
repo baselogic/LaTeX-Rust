@@ -20,6 +20,10 @@ use crate::parser::{
 use crate::style_map::styled_char;
 use crate::symbols::lookup;
 
+const DEFAULT_LAYOUT_EM_SIZE_PT: i64 = 10;
+const TEX_NULL_DELIMITER_SPACE_PT_NUM: i64 = 6;
+const TEX_NULL_DELIMITER_SPACE_PT_DEN: i64 = 5;
+
 /// Lay out `node` in `style` using STIX Two Math metrics.
 ///
 /// Every dimension on the returned [`MathBox`] is a [`Dim`](crate::Dim). Missing
@@ -52,11 +56,32 @@ use crate::symbols::lookup;
 /// assert!(!boxed.width.is_zero());
 /// ```
 pub fn layout(node: &MathNode, font: &MathFont, style: MathStyle) -> Result<MathBox, Error> {
+    layout_with_em_size_pt(node, font, style, &Dim::from_i64(DEFAULT_LAYOUT_EM_SIZE_PT))
+}
+
+/// Lay out `node` using an explicit physical root em size in TeX points.
+///
+/// The returned box dimensions remain normalized em units. The physical size is used only for
+/// absolute TeX dimensions such as `\nulldelimiterspace`. [`layout`] uses a 10 pt compatibility
+/// default when no physical size is supplied.
+///
+/// # Errors
+///
+/// Same as [`layout`], plus [`Error::InvalidOption`] when `em_size_pt` is not positive.
+pub fn layout_with_em_size_pt(
+    node: &MathNode,
+    font: &MathFont,
+    style: MathStyle,
+    em_size_pt: &Dim,
+) -> Result<MathBox, Error> {
     let mut state = NumberingState::default();
-    layout_with_numbering(node, font, style, &mut state)
+    layout_with_numbering_and_em_size_pt(node, font, style, &mut state, em_size_pt)
 }
 
 /// Lay out with a caller-owned equation counter and `\label` / `\ref` table.
+///
+/// Absolute TeX dimensions use the same 10 pt compatibility root as [`layout`]. Use
+/// [`layout_with_numbering_and_em_size_pt`] when the physical root em is known.
 ///
 /// # Arguments
 ///
@@ -90,13 +115,49 @@ pub fn layout_with_numbering(
     style: MathStyle,
     state: &mut NumberingState,
 ) -> Result<MathBox, Error> {
+    layout_with_numbering_and_em_size_pt(
+        node,
+        font,
+        style,
+        state,
+        &Dim::from_i64(DEFAULT_LAYOUT_EM_SIZE_PT),
+    )
+}
+
+/// Lay out with caller-owned numbering and an explicit physical root em size in TeX points.
+///
+/// The returned geometry is normalized em units; `em_size_pt` is used only to normalize absolute
+/// TeX dimensions.
+///
+/// # Errors
+///
+/// Same as [`layout_with_em_size_pt`].
+pub fn layout_with_numbering_and_em_size_pt(
+    node: &MathNode,
+    font: &MathFont,
+    style: MathStyle,
+    state: &mut NumberingState,
+    em_size_pt: &Dim,
+) -> Result<MathBox, Error> {
+    if em_size_pt.is_nan()
+        || !matches!(em_size_pt.cmp(&Dim::zero()), Some(Ordering::Greater))
+    {
+        return Err(Error::InvalidOption {
+            what: "em_size_pt must be positive".into(),
+        });
+    }
     let params = MathParams::from_font(font)?;
     let script_placement = ScriptPlacementParams::from_font(font)?;
+    let null_delimiter_space = &Dim::ratio(
+        TEX_NULL_DELIMITER_SPACE_PT_NUM,
+        TEX_NULL_DELIMITER_SPACE_PT_DEN,
+    ) / em_size_pt;
     let start = state.collect(node);
     Engine {
         font,
         params,
         script_placement,
+        null_delimiter_space,
         numbers: state,
         idx: Cell::new(start),
     }
@@ -107,6 +168,7 @@ struct Engine<'a> {
     font: &'a MathFont,
     params: MathParams,
     script_placement: ScriptPlacementParams,
+    null_delimiter_space: Dim,
     numbers: &'a NumberingState,
     idx: Cell<usize>,
 }
@@ -478,27 +540,35 @@ impl Engine<'_> {
         };
         let num_shift = shift_up0.max(&(&axis + &half + &gap_num + &num_b.depth));
         let den_shift = shift_dn0.max(&(&den_b.height + &gap_den + &half - &axis).clamp_nonneg());
-        let width = num_b.width.max(&den_b.width);
-        let num_c = center_in(num_b, &width);
-        let den_c = center_in(den_b, &width);
+        let content_width = num_b.width.max(&den_b.width);
+        let num_c = center_in(num_b, &content_width);
+        let den_c = center_in(den_b, &content_width);
         let num_h = num_c.height.clone();
         let den_d = den_c.depth.clone();
-        let bar =
-            MathBox::rule(width.clone(), thick.clone(), Dim::zero()).with_shift(&axis - &half);
+        let bar = MathBox::rule(content_width.clone(), thick.clone(), Dim::zero())
+            .with_shift(&axis - &half);
+        let inner = MathBox {
+            width: content_width,
+            height: &num_shift + &num_h,
+            depth: &den_shift + &den_d,
+            italic: Dim::zero(),
+            shift: Dim::zero(),
+            content: BoxContent::Overlap(vec![
+                num_c.with_shift(num_shift),
+                bar,
+                den_c.with_shift(-den_shift),
+            ]),
+        };
+        // LR-FRACTION-NULL-DELIM-005: a delimiter-less generalized fraction still has two
+        // null delimiters. TeX's default `\nulldelimiterspace` is the absolute dimension 1.2 pt,
+        // normalized here against the caller's physical root em size.
         Ok(Item {
             class: Some(AtomKind::Inner),
-            bx: MathBox {
-                width,
-                height: &num_shift + &num_h,
-                depth: &den_shift + &den_d,
-                italic: Dim::zero(),
-                shift: Dim::zero(),
-                content: BoxContent::Overlap(vec![
-                    num_c.with_shift(num_shift),
-                    bar,
-                    den_c.with_shift(-den_shift),
-                ]),
-            },
+            bx: MathBox::hpack(vec![
+                MathBox::kern(self.null_delimiter_space.clone()),
+                inner,
+                MathBox::kern(self.null_delimiter_space.clone()),
+            ]),
         })
     }
 
