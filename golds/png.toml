@@ -45,8 +45,8 @@ style = "display"
 input = "\\sum_{k=1}^{n}"
 dpi = "144"
 width_px = "32"
-height_px = "77"
-sha256 = "96457cb74217519517faec701c1aa190b123394cc31d1813158adbecc197e441"
+height_px = "65"
+sha256 = "a827bd844d0452e22b08d1d3ac060cc17484263cee18dbe1d05b5217e9d3fc26"
 
 [[gold]]
 name = "sup-x2-72"
