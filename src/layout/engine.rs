@@ -23,6 +23,9 @@ use crate::symbols::lookup;
 const DEFAULT_LAYOUT_EM_SIZE_PT: i64 = 10;
 const TEX_NULL_DELIMITER_SPACE_PT_NUM: i64 = 6;
 const TEX_NULL_DELIMITER_SPACE_PT_DEN: i64 = 5;
+const TEX_DELIMITER_FACTOR_NUM: i64 = 901;
+const TEX_DELIMITER_FACTOR_DEN: i64 = 500;
+const TEX_DELIMITER_SHORTFALL_PT: i64 = 5;
 
 /// Lay out `node` in `style` using STIX Two Math metrics.
 ///
@@ -152,12 +155,14 @@ pub fn layout_with_numbering_and_em_size_pt(
         TEX_NULL_DELIMITER_SPACE_PT_NUM,
         TEX_NULL_DELIMITER_SPACE_PT_DEN,
     ) / em_size_pt;
+    let delimiter_shortfall = &Dim::from_i64(TEX_DELIMITER_SHORTFALL_PT) / em_size_pt;
     let start = state.collect(node);
     Engine {
         font,
         params,
         script_placement,
         null_delimiter_space,
+        delimiter_shortfall,
         numbers: state,
         idx: Cell::new(start),
     }
@@ -169,6 +174,7 @@ struct Engine<'a> {
     params: MathParams,
     script_placement: ScriptPlacementParams,
     null_delimiter_space: Dim,
+    delimiter_shortfall: Dim,
     numbers: &'a NumberingState,
     idx: Cell<usize>,
 }
@@ -770,15 +776,33 @@ impl Engine<'_> {
         let body_b = self.layout(body, style)?;
         let s = self.params.scale(style);
         let axis = &self.params.axis_height * &s;
-        let above = (&body_b.height - &axis).clamp_nonneg();
-        let below = &body_b.depth + &axis;
-        let needed = above.max(&below) * Dim::from_i64(2);
-        let left = self.delim_box(open, &needed, style)?;
-        let right = self.delim_box(close, &needed, style)?;
+        let needed = self.delimiter_target(&body_b.height, &body_b.depth, &axis);
+        let left = self.center_delimiter(self.delim_box(open, &needed, style)?, &axis);
+        let right = self.center_delimiter(self.delim_box(close, &needed, style)?, &axis);
         Ok(Item {
             class: Some(AtomKind::Inner),
-            bx: MathBox::hpack(vec![left, body_b, right]),
+            bx: shifted_hpack(vec![left, body_b, right]),
         })
+    }
+
+    fn delimiter_target(&self, height: &Dim, depth: &Dim, axis: &Dim) -> Dim {
+        let above = (height - axis).clamp_nonneg();
+        let below = depth + axis;
+        let max_distance = above.max(&below);
+        let factor_target =
+            &max_distance * &Dim::ratio(TEX_DELIMITER_FACTOR_NUM, TEX_DELIMITER_FACTOR_DEN);
+        let shortfall_target =
+            (&(&max_distance * &Dim::from_i64(2)) - &self.delimiter_shortfall).clamp_nonneg();
+        factor_target.max(&shortfall_target)
+    }
+
+    fn center_delimiter(&self, mut bx: MathBox, axis: &Dim) -> MathBox {
+        if matches!(bx.content, BoxContent::Empty) {
+            return bx;
+        }
+        let center = &(&bx.height - &bx.depth) / &Dim::from_i64(2);
+        bx.shift = axis - &center;
+        bx
     }
 
     fn explicit_delim_span(&self, size: DelimSize, style: MathStyle) -> Dim {
@@ -1871,6 +1895,25 @@ impl Engine<'_> {
             class: Some(AtomKind::Inner),
             bx: inner,
         })
+    }
+}
+
+fn shifted_hpack(children: Vec<MathBox>) -> MathBox {
+    let mut width = Dim::zero();
+    let mut height = Dim::zero();
+    let mut depth = Dim::zero();
+    for child in &children {
+        width = &width + &child.width;
+        height = height.max(&(&child.height + &child.shift).clamp_nonneg());
+        depth = depth.max(&(&child.depth - &child.shift).clamp_nonneg());
+    }
+    MathBox {
+        width,
+        height,
+        depth,
+        italic: Dim::zero(),
+        shift: Dim::zero(),
+        content: BoxContent::HList(children),
     }
 }
 

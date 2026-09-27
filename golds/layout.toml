@@ -175,21 +175,21 @@ name = "left-frac-text"
 kind = "dims"
 style = "text"
 input = "\\left(\\frac{1}{2}\\right)"
-expect = "w=1.5068 h=1.223 d=0.683"
+expect = "w=1.4608 h=1.091 d=0.585"
 
 [[gold]]
 name = "left-frac-display"
 kind = "dims"
 style = "display"
 input = "\\left(\\frac{1}{2}\\right)"
-expect = "w=1.681 h=1.342 d=0.802"
+expect = "w=1.635 h=1.279 d=0.695"
 
 [[gold]]
 name = "left-brace"
 kind = "dims"
 style = "text"
 input = "\\left\\{x\\right\\}"
-expect = "w=1.213 h=0.736 d=0.197"
+expect = "w=1.213 h=0.7245 d=0.2085"
 
 [[gold]]
 name = "big-paren"
