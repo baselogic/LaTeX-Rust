@@ -155,6 +155,7 @@ pub fn layout_with_numbering_and_em_size_pt(
     }
     let params = MathParams::from_font(font)?;
     let script_placement = ScriptPlacementParams::from_font(font)?;
+    let substack = SubstackParams::from_font(font, &params)?;
     let null_delimiter_space = &Dim::ratio(
         TEX_NULL_DELIMITER_SPACE_PT_NUM,
         TEX_NULL_DELIMITER_SPACE_PT_DEN,
@@ -165,6 +166,7 @@ pub fn layout_with_numbering_and_em_size_pt(
         font,
         params,
         script_placement,
+        substack,
         null_delimiter_space,
         delimiter_shortfall,
         root_em_size_pt: em_size_pt.clone(),
@@ -178,6 +180,7 @@ struct Engine<'a> {
     font: &'a MathFont,
     params: MathParams,
     script_placement: ScriptPlacementParams,
+    substack: SubstackParams,
     null_delimiter_space: Dim,
     delimiter_shortfall: Dim,
     root_em_size_pt: Dim,
@@ -211,6 +214,36 @@ impl ScriptPlacementParams {
             superscript_bottom_max_with_subscript: fu(
                 constants.superscript_bottom_max_with_subscript().value,
             ),
+        })
+    }
+}
+
+struct SubstackParams {
+    baseline_skip: Dim,
+    line_skip: Dim,
+}
+
+impl SubstackParams {
+    fn from_font(font: &MathFont, params: &MathParams) -> Result<Self, Error> {
+        let math = font
+            .face()
+            .tables()
+            .math
+            .ok_or_else(|| Error::Unsupported {
+                what: "OpenType MATH table".into(),
+            })?;
+        let constants = math.constants.ok_or_else(|| Error::Unsupported {
+            what: "MATH constants".into(),
+        })?;
+        let units_per_em = font.units_per_em();
+        let fu = |value: i16| Dim::from_font_units(i64::from(value), units_per_em);
+        let script_scale = params.scale(MathStyle::Script);
+        let top = fu(constants.stack_top_shift_up().value);
+        let bottom = fu(constants.stack_bottom_shift_down().value);
+        let gap = fu(constants.stack_gap_min().value);
+        Ok(Self {
+            baseline_skip: &(&top + &bottom) * &script_scale,
+            line_skip: &gap * &script_scale,
         })
     }
 }
@@ -1496,31 +1529,53 @@ impl Engine<'_> {
     }
 
     fn substack(&self, lines: &[MathNode], style: MathStyle) -> Result<Item, Error> {
-        let ss = style.into_script();
-        let sep = self.params.em(ss) / Dim::from_i64(5);
-        let mut laid = Vec::new();
-        for ln in lines {
-            laid.push(self.layout(ln, ss)?);
+        if lines.is_empty() {
+            return Ok(Item {
+                class: Some(AtomKind::Ord),
+                bx: MathBox::empty(),
+            });
         }
-        let width = laid.iter().fold(Dim::zero(), |w, b| w.max(&b.width));
-        let mut rows = Vec::new();
-        for (i, b) in laid.into_iter().enumerate() {
-            if i > 0 {
-                rows.push(MathBox {
-                    width: Dim::zero(),
-                    height: Dim::zero(),
-                    depth: sep.clone(),
-                    italic: Dim::zero(),
-                    shift: Dim::zero(),
-                    content: BoxContent::Empty,
-                });
-            }
-            rows.push(align_in(b, &width, ColSpec::Center));
+
+        // LR-AMSMATH-SUBSTACK-017: AMSMath subarray rows are always Script style, even when
+        // the surrounding expression is already Script. Their baselines use the OpenType MATH
+        // stack constants and the completed stack is vertically centered on the surrounding axis.
+        let mut laid = Vec::with_capacity(lines.len());
+        for line in lines {
+            laid.push(self.layout(line, MathStyle::Script)?);
         }
+        let width = laid
+            .iter()
+            .fold(Dim::zero(), |current, row| current.max(&row.width));
+        let rows: Vec<_> = laid
+            .into_iter()
+            .map(|row| center_in(row, &width))
+            .collect();
+        let gaps = self.substack_interrow_gaps(&rows);
+        let stack = self.center_amsmath_stack(rows, &gaps, style);
+
+        // Enclosing large-operator limits overwrite MathBox::shift. Keep the substack's internal
+        // vcenter on a child box and expose a neutral outer shift so limit placement cannot erase it.
         Ok(Item {
             class: Some(AtomKind::Ord),
-            bx: MathBox::vpack(rows),
+            bx: shifted_hpack(vec![stack]),
         })
+    }
+
+    fn substack_interrow_gaps(&self, rows: &[MathBox]) -> Vec<Dim> {
+        rows.windows(2)
+            .map(|pair| {
+                let candidate =
+                    &(&self.substack.baseline_skip - &pair[0].depth) - &pair[1].height;
+                if candidate
+                    .cmp(&self.substack.line_skip)
+                    .is_some_and(|ordering| ordering != Ordering::Less)
+                {
+                    candidate
+                } else {
+                    self.substack.line_skip.clone()
+                }
+            })
+            .collect()
     }
 
     fn matrix(
