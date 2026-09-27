@@ -16,9 +16,9 @@ name = "frac-144"
 kind = "png"
 input = "\\frac{1}{2}"
 dpi = "144"
-width_px = "9"
+width_px = "14"
 height_px = "40"
-sha256 = "4ece3cb873702e60d8689340fee1171c8a10b7849a85f221a239fff9251a7a4d"
+sha256 = "d2dbe128def80cd08e7f0d52a3926f477852470e7ac10ceb18fc62f6ff763f16"
 
 [[gold]]
 name = "sqrt-x-144"

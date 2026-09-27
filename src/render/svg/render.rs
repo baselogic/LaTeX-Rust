@@ -7,7 +7,7 @@ use crate::color::Color;
 use crate::dim::Dim;
 use crate::error::{Error, FontError};
 use crate::font::MathFont;
-use crate::layout::{layout, BoxContent, MathBox, MathStyle};
+use crate::layout::{layout_with_em_size_pt, BoxContent, MathBox, MathStyle};
 use crate::parser::parse;
 use crate::render::glyph_render_scale;
 
@@ -87,7 +87,7 @@ pub fn latex_to_svg(latex: &str, font: &MathFont, options: &SvgOptions) -> Resul
     } else {
         MathStyle::Text
     };
-    let tree = layout(&ast, font, style)?;
+    let tree = layout_with_em_size_pt(&ast, font, style, &options.font_size_pt)?;
     render_svg(&tree, font, options)
 }
 

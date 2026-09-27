@@ -27,7 +27,7 @@ mesh_count = "2"
 rect_count = "1"
 vertex_count = "106"
 index_count = "306"
-rect_width_px = "10.27040004730224609375"
+rect_width_px = "15.070400238037109375"
 rect_height_px = "45.83319854736328125"
 
 [[gold]]
@@ -185,7 +185,7 @@ mesh_count = "4"
 rect_count = "1"
 vertex_count = "455"
 index_count = "1341"
-rect_width_px = "25.1271991729736328125"
+rect_width_px = "29.9272003173828125"
 rect_height_px = "47.852001190185546875"
 
 [[gold]]

@@ -91,21 +91,21 @@ name = "frac-half-text"
 kind = "dims"
 style = "text"
 input = "\\frac{1}{2}"
-expect = "w=0.3668 h=1.0519 d=0.585"
+expect = "w=0.6068 h=1.0519 d=0.585"
 
 [[gold]]
 name = "frac-half-display"
 kind = "dims"
 style = "display"
 input = "\\frac{1}{2}"
-expect = "w=0.495 h=1.279 d=0.64"
+expect = "w=0.735 h=1.279 d=0.64"
 
 [[gold]]
 name = "frac-wide-num"
 kind = "dims"
 style = "text"
 input = "\\frac{a+b}{c+d}"
-expect = "w=1.3811 h=1.1072 d=0.6172"
+expect = "w=1.6211 h=1.1072 d=0.6172"
 
 [[gold]]
 name = "sqrt-x-text"
@@ -175,14 +175,14 @@ name = "left-frac-text"
 kind = "dims"
 style = "text"
 input = "\\left(\\frac{1}{2}\\right)"
-expect = "w=1.2668 h=1.223 d=0.683"
+expect = "w=1.5068 h=1.223 d=0.683"
 
 [[gold]]
 name = "left-frac-display"
 kind = "dims"
 style = "display"
 input = "\\left(\\frac{1}{2}\\right)"
-expect = "w=1.441 h=1.342 d=0.802"
+expect = "w=1.681 h=1.342 d=0.802"
 
 [[gold]]
 name = "left-brace"

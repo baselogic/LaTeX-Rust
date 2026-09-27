@@ -32,7 +32,7 @@ name = "aligned-frac-dims"
 kind = "dims"
 style = "display"
 input = "\\begin{aligned} \\frac{a}{b} &= c \\end{aligned}"
-expect = "w=1.966777777777777777777777 h=1.119 d=0.652"
+expect = "w=2.206777777777777777777777 h=1.119 d=0.652"
 
 [[gold]]
 name = "align-two-ast"
@@ -149,7 +149,7 @@ name = "cases-frac-dims"
 kind = "dims"
 style = "display"
 input = "\\begin{cases} \\frac{1}{2} \\\\ b \\end{cases}"
-expect = "w=1.019 h=1.702 d=1.557"
+expect = "w=1.236 h=1.702 d=1.557"
 
 [[gold]]
 name = "array-lcr-ast"
