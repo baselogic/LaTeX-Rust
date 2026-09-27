@@ -26,6 +26,10 @@ const TEX_NULL_DELIMITER_SPACE_PT_DEN: i64 = 5;
 const TEX_DELIMITER_FACTOR_NUM: i64 = 901;
 const TEX_DELIMITER_FACTOR_DEN: i64 = 500;
 const TEX_DELIMITER_SHORTFALL_PT: i64 = 5;
+const TEX_ARRAY_COLSEP_PT: i64 = 5;
+const TEX_MIN_ALIGN_SEP_PT: i64 = 10;
+const TEX_JOT_PT: i64 = 3;
+const TEX_LINE_SKIP_PT: i64 = 1;
 
 /// Lay out `node` in `style` using STIX Two Math metrics.
 ///
@@ -163,6 +167,7 @@ pub fn layout_with_numbering_and_em_size_pt(
         script_placement,
         null_delimiter_space,
         delimiter_shortfall,
+        root_em_size_pt: em_size_pt.clone(),
         numbers: state,
         idx: Cell::new(start),
     }
@@ -175,6 +180,7 @@ struct Engine<'a> {
     script_placement: ScriptPlacementParams,
     null_delimiter_space: Dim,
     delimiter_shortfall: Dim,
+    root_em_size_pt: Dim,
     numbers: &'a NumberingState,
     idx: Cell<usize>,
 }
@@ -1537,7 +1543,8 @@ impl Engine<'_> {
         };
         match style_m {
             MatrixStyle::Align => self.align_env(rows, body_style, true),
-            MatrixStyle::Aligned | MatrixStyle::Split => self.align_env(rows, body_style, false),
+            MatrixStyle::Aligned => self.amsmath_aligned(rows, body_style),
+            MatrixStyle::Split => self.align_env(rows, body_style, false),
             MatrixStyle::Gather => self.gather_env(rows, body_style),
             MatrixStyle::Multline => self.multline_env(rows, body_style),
             MatrixStyle::Equation => self.equation_env(rows, body_style),
@@ -1547,6 +1554,8 @@ impl Engine<'_> {
         }
     }
 
+    // LR-AMSMATH-GRID-016: AMSMath matrix/cases/aligned layouts have environment-specific
+    // cell styles, physical spacing and vertical-centering rules that the generic grid does not.
     fn centered_matrix(
         &self,
         style_m: MatrixStyle,
@@ -1554,28 +1563,239 @@ impl Engine<'_> {
         style: MathStyle,
     ) -> Result<Item, Error> {
         let data = data_cells(rows)?;
-        self.grid(
-            &data,
-            style,
-            None,
-            self.params.mu(style) * Dim::from_i64(10),
-            ColSpec::Center,
-            matrix_delims(style_m),
-            false,
-        )
+        let cells = self.layout_environment_rows(&data, MathStyle::Text)?;
+        let column_gap = self.tex_points_in_root_em(TEX_ARRAY_COLSEP_PT * 2);
+        let packed_rows = self.build_amsmath_rows(
+            cells,
+            &column_gap,
+            &Dim::one(),
+            |_| ColSpec::Center,
+            |column| column > 0,
+        );
+        let gaps = vec![Dim::zero(); packed_rows.len().saturating_sub(1)];
+        let stack = self.center_amsmath_stack(packed_rows, &gaps, style);
+        let bx = self.wrap_amsmath_stack(stack, matrix_delims(style_m), style)?;
+        Ok(Item {
+            class: Some(AtomKind::Inner),
+            bx,
+        })
     }
 
     fn cases_env(&self, rows: &[EnvRow], style: MathStyle) -> Result<Item, Error> {
         let data = data_cells(rows)?;
-        self.grid(
-            &data,
-            style,
-            None,
-            self.params.em(style),
-            ColSpec::Left,
-            (Some('{'), None),
-            false,
+        let cells = self.layout_environment_rows(&data, MathStyle::Text)?;
+        let packed_rows = self.build_amsmath_rows(
+            cells,
+            &Dim::one(),
+            &Dim::ratio(6, 5),
+            |_| ColSpec::Left,
+            |column| column > 0,
+        );
+        let gaps = vec![Dim::zero(); packed_rows.len().saturating_sub(1)];
+        let stack = self.center_amsmath_stack(packed_rows, &gaps, style);
+        let bx = self.wrap_amsmath_stack(stack, (Some('{'), None), style)?;
+        Ok(Item {
+            class: Some(AtomKind::Inner),
+            bx,
+        })
+    }
+
+    fn amsmath_aligned(&self, rows: &[EnvRow], style: MathStyle) -> Result<Item, Error> {
+        if rows
+            .iter()
+            .any(|row| !matches!(row, EnvRow::Cells { .. }))
+        {
+            return self.align_env(rows, style, false);
+        }
+
+        let mut cells = Vec::with_capacity(rows.len());
+        for row in rows {
+            let EnvRow::Cells { cells: row, .. } = row else {
+                unreachable!("non-cell aligned rows handled above");
+            };
+            let mut laid = Vec::with_capacity(row.len());
+            for (column, cell) in row.iter().enumerate() {
+                let mut bx = self.layout(cell, MathStyle::Display)?;
+                if column % 2 == 1 {
+                    let leading = self.aligned_leading_ord_space(cell)?;
+                    if !leading.is_zero() {
+                        bx = MathBox::hpack(vec![MathBox::kern(leading), bx]);
+                    }
+                }
+                laid.push(bx);
+            }
+            cells.push(laid);
+        }
+
+        let pair_gap = self.tex_points_in_root_em(TEX_MIN_ALIGN_SEP_PT);
+        let packed_rows = self.build_amsmath_rows(
+            cells,
+            &pair_gap,
+            &Dim::one(),
+            |column| {
+                if column % 2 == 0 {
+                    ColSpec::Right
+                } else {
+                    ColSpec::Left
+                }
+            },
+            |column| column > 0 && column % 2 == 0,
+        );
+        let gaps = self.aligned_interrow_gaps(&packed_rows);
+        let stack = self.center_amsmath_stack(packed_rows, &gaps, style);
+        let bx = self.wrap_amsmath_stack(stack, (None, None), style)?;
+        Ok(Item {
+            class: Some(AtomKind::Inner),
+            bx,
+        })
+    }
+
+    fn tex_points_in_root_em(&self, points: i64) -> Dim {
+        Dim::from_i64(points) / &self.root_em_size_pt
+    }
+
+    fn layout_environment_rows(
+        &self,
+        rows: &[Vec<MathNode>],
+        style: MathStyle,
+    ) -> Result<Vec<Vec<MathBox>>, Error> {
+        rows.iter()
+            .map(|row| {
+                row.iter()
+                    .map(|cell| self.layout(cell, style))
+                    .collect::<Result<Vec<_>, _>>()
+            })
+            .collect()
+    }
+
+    fn aligned_leading_ord_space(&self, cell: &MathNode) -> Result<Dim, Error> {
+        let bare = self.layout(cell, MathStyle::Display)?;
+        let empty_ord = MathNode::Row(Vec::new());
+        let prefixed = match cell {
+            MathNode::Row(items) => {
+                let mut with_ord = Vec::with_capacity(items.len().saturating_add(1));
+                with_ord.push(empty_ord);
+                with_ord.extend(items.iter().cloned());
+                MathNode::Row(with_ord)
+            }
+            _ => MathNode::Row(vec![empty_ord, cell.clone()]),
+        };
+        let with_ord = self.layout(&prefixed, MathStyle::Display)?;
+        Ok((&with_ord.width - &bare.width).clamp_nonneg())
+    }
+
+    fn amsmath_strut(stretch: &Dim) -> MathBox {
+        MathBox::rule(
+            Dim::zero(),
+            &Dim::ratio(7, 10) * stretch,
+            &Dim::ratio(3, 10) * stretch,
         )
+    }
+
+    fn build_amsmath_rows(
+        &self,
+        rows: Vec<Vec<MathBox>>,
+        gap: &Dim,
+        strut_stretch: &Dim,
+        align_for_column: impl Fn(usize) -> ColSpec,
+        gap_before_column: impl Fn(usize) -> bool,
+    ) -> Vec<MathBox> {
+        let ncols = rows.iter().map(Vec::len).max().unwrap_or(0);
+        let mut widths = vec![Dim::zero(); ncols];
+        for row in &rows {
+            for (column, cell) in row.iter().enumerate() {
+                widths[column] = widths[column].max(&cell.width);
+            }
+        }
+
+        rows.into_iter()
+            .map(|mut row| {
+                while row.len() < ncols {
+                    row.push(MathBox::empty());
+                }
+                let mut parts = Vec::with_capacity(row.len().saturating_mul(2).saturating_add(1));
+                parts.push(Self::amsmath_strut(strut_stretch));
+                for (column, cell) in row.into_iter().enumerate() {
+                    if gap_before_column(column) {
+                        parts.push(MathBox::kern(gap.clone()));
+                    }
+                    parts.push(align_in(cell, &widths[column], align_for_column(column)));
+                }
+                MathBox::hpack(parts)
+            })
+            .collect()
+    }
+
+    fn aligned_interrow_gaps(&self, rows: &[MathBox]) -> Vec<Dim> {
+        let jot = self.tex_points_in_root_em(TEX_JOT_PT);
+        let baseline_skip = &Dim::one() + &jot;
+        let line_skip = &self.tex_points_in_root_em(TEX_LINE_SKIP_PT) + &jot;
+        rows.windows(2)
+            .map(|pair| {
+                let candidate = &(&baseline_skip - &pair[0].depth) - &pair[1].height;
+                if matches!(candidate.cmp(&jot), Some(Ordering::Less)) {
+                    line_skip.clone()
+                } else {
+                    candidate
+                }
+            })
+            .collect()
+    }
+
+    fn center_amsmath_stack(
+        &self,
+        rows: Vec<MathBox>,
+        gaps: &[Dim],
+        style: MathStyle,
+    ) -> MathBox {
+        debug_assert_eq!(gaps.len(), rows.len().saturating_sub(1));
+        let mut children = Vec::with_capacity(rows.len().saturating_mul(2).saturating_sub(1));
+        for (row_index, row) in rows.into_iter().enumerate() {
+            if let Some(gap) = row_index.checked_sub(1).and_then(|index| gaps.get(index)) {
+                if !gap.is_zero() {
+                    children.push(sep_row(gap.clone()));
+                }
+            }
+            children.push(row);
+        }
+        if children.is_empty() {
+            return MathBox::empty();
+        }
+        let mut stack = MathBox::vpack(children);
+        let span = &stack.height + &stack.depth;
+        let axis = &self.params.axis_height * &self.params.scale(style);
+        let desired_height = &(&span / &Dim::from_i64(2)) + &axis;
+        stack.shift = &desired_height - &stack.height;
+        stack
+    }
+
+    fn wrap_amsmath_stack(
+        &self,
+        stack: MathBox,
+        delims: (Option<char>, Option<char>),
+        style: MathStyle,
+    ) -> Result<MathBox, Error> {
+        let scale = self.params.scale(style);
+        let axis = &self.params.axis_height * &scale;
+        let effective_height = (&stack.height + &stack.shift).clamp_nonneg();
+        let effective_depth = (&stack.depth - &stack.shift).clamp_nonneg();
+        let needed = self.delimiter_target(&effective_height, &effective_depth, &axis);
+
+        let mut children = Vec::with_capacity(3);
+        if let Some(ch) = delims.0 {
+            children.push(self.center_delimiter(
+                self.sized_glyph(ch, &needed, style)?,
+                &axis,
+            ));
+        }
+        children.push(stack);
+        if let Some(ch) = delims.1 {
+            children.push(self.center_delimiter(
+                self.sized_glyph(ch, &needed, style)?,
+                &axis,
+            ));
+        }
+        Ok(shifted_hpack(children))
     }
 
     fn align_env(&self, rows: &[EnvRow], style: MathStyle, numbered: bool) -> Result<Item, Error> {
@@ -1916,84 +2136,6 @@ impl Engine<'_> {
         })
     }
 
-    #[allow(clippy::too_many_arguments)]
-    fn grid(
-        &self,
-        rows: &[Vec<MathNode>],
-        style: MathStyle,
-        spec: Option<&[ColSpec]>,
-        col_sep: Dim,
-        default_align: ColSpec,
-        delims: (Option<char>, Option<char>),
-        numbered: bool,
-    ) -> Result<Item, Error> {
-        if rows.is_empty() {
-            return Ok(Item {
-                bx: MathBox::empty(),
-                class: Some(AtomKind::Inner),
-            });
-        }
-        let ncols = rows.iter().map(|r| r.len()).max().unwrap_or(0);
-        let mut cells: Vec<Vec<MathBox>> = Vec::new();
-        for row in rows {
-            let mut rboxes = Vec::new();
-            for c in 0..ncols {
-                if c < row.len() {
-                    rboxes.push(self.layout(&row[c], style)?);
-                } else {
-                    rboxes.push(MathBox::empty());
-                }
-            }
-            cells.push(rboxes);
-        }
-        let mut col_w: Vec<Dim> = vec![Dim::zero(); ncols];
-        for row in &cells {
-            for (j, cell) in row.iter().enumerate() {
-                col_w[j] = col_w[j].max(&cell.width);
-            }
-        }
-        let row_sep = self.params.em(style) / Dim::from_i64(5);
-        let mut row_boxes = Vec::new();
-        for (ri, row) in cells.into_iter().enumerate() {
-            let mut parts = Vec::new();
-            for (j, cell) in row.into_iter().enumerate() {
-                if j > 0 {
-                    parts.push(MathBox::kern(col_sep.clone()));
-                }
-                let align = spec
-                    .and_then(|s| s.get(j).copied())
-                    .unwrap_or(default_align);
-                parts.push(align_in(cell, &col_w[j], align));
-            }
-            if ri > 0 {
-                row_boxes.push(sep_row(row_sep.clone()));
-            }
-            let mut packed = MathBox::hpack(parts);
-            if numbered {
-                let num = match self.take_number() {
-                    Some(s) => Some(self.number_box(&s, MathStyle::Text)?),
-                    None => None,
-                };
-                packed = self.attach_number(packed, num, style);
-            }
-            row_boxes.push(packed);
-        }
-        let mut inner = MathBox::vpack(row_boxes);
-        let needed = &inner.height + &inner.depth;
-        let (ld, rd) = delims;
-        if let Some(l) = ld {
-            let left = self.sized_glyph(l, &needed, style)?;
-            let right = match rd {
-                Some(r) => self.sized_glyph(r, &needed, style)?,
-                None => MathBox::empty(),
-            };
-            inner = MathBox::hpack(vec![left, inner, right]);
-        }
-        Ok(Item {
-            class: Some(AtomKind::Inner),
-            bx: inner,
-        })
-    }
 }
 
 fn shifted_hpack(children: Vec<MathBox>) -> MathBox {
