@@ -224,7 +224,7 @@ name = "sum-limits-display"
 kind = "dims"
 style = "display"
 input = "\\sum_{k=1}^{n}"
-expect = "w=1.3272 h=1.5879 d=1.608"
+expect = "w=1.3272 h=1.5824 d=1.0843"
 
 [[gold]]
 name = "sum-scripts-text"

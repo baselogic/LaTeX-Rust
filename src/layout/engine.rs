@@ -950,11 +950,94 @@ impl Engine<'_> {
         } else {
             Dim::zero()
         };
-        let op = self.sized_glyph(ch, &min_h, style)?;
+        let mut op = self.sized_glyph(ch, &min_h, style)?;
         let use_limits = limits_in_display && style.is_display();
-        self.attach_limits(op, hi, lo, style, use_limits)
+        if !use_limits {
+            return self.attach_limits(op, hi, lo, style, false);
+        }
+
+        // LR-LARGE-OP-AXIS-013: displayed large operators with limits are boxed on
+        // the OpenType MATH axis before the upper/lower branches are positioned.
+        let axis = &self.params.axis_height * &self.params.scale(style);
+        let center = &(&op.height - &op.depth) / &Dim::from_i64(2);
+        op.shift = &axis - &center;
+        self.attach_large_op_limits(op, hi, lo, style)
     }
 
+    fn attach_large_op_limits(
+        &self,
+        op: MathBox,
+        over: Option<&MathNode>,
+        under: Option<&MathNode>,
+        style: MathStyle,
+    ) -> Result<Item, Error> {
+        let s = self.params.scale(style);
+        let op_shift = op.shift.clone();
+        let op_h = (&op.height + &op_shift).clamp_nonneg();
+        let op_d = (&op.depth - &op_shift).clamp_nonneg();
+
+        let over_b = match over {
+            Some(o) => Some(self.layout(o, style.into_script())?),
+            None => None,
+        };
+        let under_b = match under {
+            Some(u) => Some(self.layout(u, style.into_script())?),
+            None => None,
+        };
+
+        let mut width = op.width.clone();
+        if let Some(ref o) = over_b {
+            width = width.max(&o.width);
+        }
+        if let Some(ref u) = under_b {
+            width = width.max(&u.width);
+        }
+
+        let mut height = op_h.clone();
+        let mut depth = op_d.clone();
+
+        let mut centered_op = center_in(op, &width);
+        centered_op.shift = op_shift;
+        let mut kids = vec![centered_op];
+
+        if let Some(ob) = over_b {
+            let gap = self.params.upper_limit_gap_min.clone() * &s;
+            let rise = self.params.upper_limit_baseline_rise_min.clone() * &s;
+
+            // LR-LARGE-OP-LIMITS-007: baseline-rise and edge-gap minima are
+            // independent inequalities; the limit depth belongs only to the gap one.
+            let offset = rise.max(&(&gap + &ob.depth));
+            let sh = &op_h + &offset;
+
+            height = height.max(&(&sh + &ob.height));
+            kids.push(center_in(ob, &width).with_shift(sh));
+        }
+
+        if let Some(ub) = under_b {
+            let gap = self.params.lower_limit_gap_min.clone() * &s;
+            let drop = self.params.lower_limit_baseline_drop_min.clone() * &s;
+
+            // The lower relation mirrors the upper one: the limit ascent belongs only
+            // to the edge-gap inequality, not to the baseline-drop minimum.
+            let offset = drop.max(&(&gap + &ub.height));
+            let sh = &op_d + &offset;
+
+            depth = depth.max(&(&sh + &ub.depth));
+            kids.push(center_in(ub, &width).with_shift(-sh));
+        }
+
+        Ok(Item {
+            class: Some(AtomKind::Op),
+            bx: MathBox {
+                width,
+                height,
+                depth,
+                italic: Dim::zero(),
+                shift: Dim::zero(),
+                content: BoxContent::Overlap(kids),
+            },
+        })
+    }
     fn attach_limits(
         &self,
         op: MathBox,
