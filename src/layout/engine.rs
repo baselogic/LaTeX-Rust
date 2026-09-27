@@ -596,12 +596,23 @@ impl Engine<'_> {
         // LR-RADICAL-VARIANT-002: RadicalExtraAscender reserves whitespace above the
         // finished radical; it is not part of the minimum span passed to MathVariants.
         let needed = &rad_b.height + &rad_b.depth + &gap + &thick;
-        let surd = self.sized_glyph('√', &needed, style)?;
+        let mut surd = self.sized_glyph('√', &needed, style)?;
+        let surd_span = &surd.height + &surd.depth;
+        let radicand_span = &rad_b.height + &rad_b.depth;
+        // LR-RADICAL-JOIN-003: a ready-made radical variant can be taller than the minimum
+        // request. TeX redistributes that discrete slack into the vertical gap instead of
+        // lowering the whole surd to the original rule position.
+        let distributed_gap =
+            (&(&(&surd_span - &thick) - &radicand_span) + &gap) / &Dim::from_i64(2);
+        let gap = gap.max(&distributed_gap);
+        let inner_ascent = &rad_b.height + &gap + &thick;
+        let surd_descent = (&surd_span - &inner_ascent).clamp_nonneg();
+        surd.shift = &inner_ascent - &surd.height;
         let bar = MathBox::rule(rad_b.width.clone(), thick.clone(), Dim::zero())
             .with_shift(&rad_b.height + &gap);
         let rad_col = MathBox {
             width: rad_b.width.clone(),
-            height: &rad_b.height + &gap + &thick + &extra,
+            height: &inner_ascent + &extra,
             depth: rad_b.depth.clone(),
             italic: Dim::zero(),
             shift: Dim::zero(),
@@ -609,15 +620,19 @@ impl Engine<'_> {
         };
         let mut kids = vec![surd, rad_col];
         let mut width = MathBox::hpack(vec![kids[0].clone(), kids[1].clone()]).width;
-        let height = (&rad_b.height + &gap + &thick + &extra).max(&kids[0].height);
-        let depth = rad_b.depth.max(&kids[0].depth);
+        let mut height = &inner_ascent + &extra;
+        let mut depth = rad_b.depth.max(&surd_descent);
         if let Some(d) = deg {
             let db = self.layout(d, MathStyle::ScriptScript)?;
             let before = &self.params.radical_kern_before_degree * &s;
             let after = &self.params.radical_kern_after_degree * &s;
             let pct = Dim::from_i64(i64::from(self.params.radical_degree_bottom_raise_percent))
                 / Dim::from_i64(100);
-            let raise = &height * &pct;
+            // LR-RADICAL-DEGREE-004: the percentage is measured from the bottom of the
+            // complete shifted radical sign, not from the enclosing radical box height.
+            let raise = &(&surd_span * &pct) - &surd_descent;
+            height = height.max(&(&db.height + &raise));
+            depth = depth.max(&(&db.depth - &raise).clamp_nonneg());
             let deg_box = db.with_shift(raise);
             kids = vec![
                 MathBox::kern(before),
