@@ -6,7 +6,11 @@ use crate::dim::Dim;
 use crate::error::{Error, FontError};
 
 /// Embedded STIX Two Math Regular 2.13 (SIL OFL 1.1).
-pub const STIX_TWO_MATH_OTF: &[u8] =
+///
+/// A `static` rather than a `const`, so that the font's bytes are placed in the binary once and every use refers
+/// to that one copy. A `const` is inlined at each use site, and a crate that reads these bytes as well as calling
+/// [`MathFont::stix`] carries the 839 KB font twice.
+pub static STIX_TWO_MATH_OTF: &[u8] =
     include_bytes!("../../fonts/stix-two-math/STIXTwoMath-Regular.otf");
 
 /// SHA-256 (hex) of [`STIX_TWO_MATH_OTF`]. Locked by gold.
