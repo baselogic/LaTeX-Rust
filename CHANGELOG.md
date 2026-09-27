@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0] — 2026-09-27
+
+### Added
+
+- Expose `render::glyph_render_scale` as the checked renderer boundary for external backends consuming `MathBox` glyphs. The API derives the character and glyph id from the box so callers cannot supply mismatched scale inputs.
+- Add a differential LuaLaTeX layout oracle and its stress corpus next to the math engine so it measures `MathBox` directly rather than a downstream repair/display-list layer.
+- Add the 158-case accepted-layout corpus as direct parser/layout coverage.
+
 ## [1.1.0] — 2026-09-27
 
 ### Added

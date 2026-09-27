@@ -122,9 +122,9 @@ fn emit(
     let baseline = parent_baseline - &(bx.shift.clone() * em_px);
     match &bx.content {
         BoxContent::Empty | BoxContent::Kern(_) => Ok(()),
-        BoxContent::Glyph { ch, glyph_id } => {
+        BoxContent::Glyph { glyph_id, .. } => {
             let path = glyph_path(font, *glyph_id, cache)?;
-            let glyph_fu_px = fu_px * &glyph_render_scale(bx, font, *ch, *glyph_id)?;
+            let glyph_fu_px = fu_px * &glyph_render_scale(bx, font)?;
             let sx = px(&glyph_fu_px);
             let sy = px(&-glyph_fu_px);
             let tx = px(origin_x);

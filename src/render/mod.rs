@@ -14,7 +14,7 @@ use core::cmp::Ordering;
 use crate::dim::Dim;
 use crate::error::Error;
 use crate::font::MathFont;
-use crate::layout::MathBox;
+use crate::layout::{BoxContent, MathBox};
 
 #[cfg(feature = "egui")]
 pub use egui::{latex_to_shapes, paint_egui, shapes};
@@ -25,15 +25,21 @@ pub use svg::{latex_to_svg, render_svg, SvgOptions};
 /// Recover the outline scale already encoded in a glyph box's exact layout metrics.
 ///
 /// LR-SCRIPT-GLYPH-SCALE-010: layout scales Script/ScriptScript glyph metrics, while the
-/// renderer starts from the font's unscaled outline coordinates. Keep that dependency-specific
-/// recovery in one place so every backend paints the same geometry.
-pub(crate) fn glyph_render_scale(
-    bx: &MathBox,
-    font: &MathFont,
-    ch: char,
-    glyph_id: u16,
-) -> Result<Dim, Error> {
-    let metrics = font.glyph_id(ch, glyph_id)?;
+/// renderer starts from the font's unscaled outline coordinates. External renderers must use
+/// this function rather than reconstructing that scale from private layout assumptions.
+///
+/// # Errors
+///
+/// Returns [`Error::Malformed`] when `bx` is not a glyph box, its encoded metrics imply an
+/// inconsistent or non-positive scale, or no non-zero metric can establish a scale. Font lookup
+/// failures are propagated unchanged.
+pub fn glyph_render_scale(bx: &MathBox, font: &MathFont) -> Result<Dim, Error> {
+    let BoxContent::Glyph { ch, glyph_id } = &bx.content else {
+        return Err(Error::Malformed {
+            what: "glyph render scale requested for non-glyph box".into(),
+        });
+    };
+    let metrics = font.glyph_id(*ch, *glyph_id)?;
     let mut scale: Option<Dim> = None;
 
     for (actual, unscaled) in [

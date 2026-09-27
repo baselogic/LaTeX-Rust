@@ -1,0 +1,159 @@
+# name	style	source
+case-001	text	x
+case-002	text	x_i^2
+case-003	text	\frac{a}{b}
+case-004	text	\sqrt{x}
+case-005	text	\sum_{i=1}^{n} i
+case-006	text	\int_0^\infty e^{-x}\,dx
+case-007	text	R^2
+case-008	text	\widehat{J}_G
+case-009	text	\widetilde{x}
+case-010	text	\vec v
+case-011	text	\overline{ABC}
+case-012	text	\underline{xyz}
+case-013	text	x_{i_j}^{a^{b^c}}
+case-014	text	\frac{\frac{a}{b}}{\frac{c}{d}}
+case-015	text	\sqrt[7]{\frac{x_i^2+y_j^2}{1+\alpha}}
+case-016	text	\left(\frac{a}{b}\right)^{\left(\frac{c}{d}\right)}
+case-017	text	\sum_{\substack{1\le i\le n\\ i\ \mathrm{impar}}} i^2
+case-018	display	a+b-c\times d\div e = f \neq g < h > i \le j \ge k
+case-019	display	\alpha+\beta+\gamma+\delta+\epsilon+\varepsilon+\zeta+\eta+\theta+\vartheta+ \iota+\kappa+\lambda+\mu+\nu+\xi+\pi+\varpi+\rho+\varrho+\sigma+\varsigma+ \tau+\upsilon+\phi+\varphi+\chi+\psi+\omega
+case-020	display	\Gamma+\Delta+\Theta+\Lambda+\Xi+\Pi+\Sigma+\Upsilon+\Phi+\Psi+\Omega
+case-021	display	\pm\ \mp\ \times\ \div\ \cdot\ \ast\ \star\ \circ\ \bullet \qquad \cap\ \cup\ \subset\ \supset\ \subseteq\ \supseteq
+case-022	display	\to\ \leftarrow\ \rightarrow\ \leftrightarrow\ \Rightarrow\ \Leftarrow\ \Leftrightarrow
+case-023	display	x_i,\quad x^2,\quad x_i^2,\quad x_{i_j}^{a_b},\quad x_{i_{j_k}}^{a^{b^c}}
+case-024	display	A_{B_{C_{D_E}}}^{F^{G^{H^I}}}
+case-025	display	\left( x_{\frac{a}{b}}^{\sqrt{1+\frac{c}{d}}} \right)_{\sum_{i=1}^{n}i}^{\prod_{j=1}^{m}j}
+case-026	display	\frac{a}{b} \qquad \frac{a+b}{c+d} \qquad \frac{1}{1+\frac{1}{1+\frac{1}{1+x}}}
+case-027	display	\frac{ \frac{a_1+a_2}{b_1+b_2} }{ \frac{c_1+c_2}{d_1+d_2} }
+case-028	display	\frac{ \sqrt{1+\frac{x^2}{1+x^2}} }{ 1+\sqrt[3]{\frac{1-\alpha}{1+\beta}} }
+case-029	display	\sqrt{x} \qquad \sqrt{x^2+y^2} \qquad \sqrt[3]{x^3+y^3} \qquad \sqrt[17]{\frac{a+b}{c+d}}
+case-030	display	\sqrt{ 1+\sqrt{ 1+\sqrt{ 1+\sqrt{1+x} } } }
+case-031	display	\sqrt[ \frac{1+\alpha}{2} ]{ \frac{ x_i^{2n}+y_j^{2n} }{ 1+\sqrt{1+z^2} } }
+case-032	display	\left( \frac{a}{b} \right) \qquad \left[ \frac{\frac{a}{b}}{\frac{c}{d}} \right] \qquad \left\{ \sqrt{\frac{1+x}{1-x}} \right\}
+case-033	display	\left\langle \frac{ \sum_{i=1}^{n} x_i }{ \sqrt{\sum_{i=1}^{n}x_i^2} } \right\rangle
+case-034	display	\left| \frac{a+b}{c+d} \right| \qquad \left\Vert \frac{a+b}{c+d} \right\Vert
+case-035	display	\left. \frac{d}{dx}x^n \right|_{x=1}
+case-036	display	( x ) \quad \bigl( x \bigr) \quad \Bigl( x \Bigr) \quad \biggl( x \biggr) \quad \Biggl( x \Biggr)
+case-037	display	\biggl[ \frac{a}{b} \biggr] \qquad \Biggl\{ \frac{\frac{a}{b}}{\frac{c}{d}} \Biggr\}
+case-038	display	\hat x \qquad \widehat x \qquad \widehat{xy} \qquad \widehat{XYZ} \qquad \widehat{ABCDEFGHIJK}
+case-039	display	\tilde x \qquad \widetilde x \qquad \widetilde{xy} \qquad \widetilde{XYZ} \qquad \widetilde{ABCDEFGHIJK}
+case-040	display	\hat J_G \qquad \widehat J_G \qquad \widehat{J}_G \qquad \widehat{J_G}
+case-041	display	\check x\quad \breve x\quad \acute x\quad \grave x\quad \bar x\quad \vec x\quad \dot x\quad \ddot x\quad \dddot x\quad \ddddot x\quad \mathring x
+case-042	display	\widehat{\widetilde{\widehat{ABC}}} \qquad \widetilde{\widehat{\widetilde{xyz}}}
+case-043	display	\hat{\frac{a}{b}} \qquad \widehat{\frac{a+b}{c+d}} \qquad \widetilde{\sqrt{x^2+y^2}}
+case-044	display	\overline{x} \qquad \overline{ABC} \qquad \overline{\frac{a+b}{c+d}}
+case-045	display	\underline{x} \qquad \underline{ABC} \qquad \underline{\frac{a+b}{c+d}}
+case-046	display	\overrightarrow{x} \qquad \overrightarrow{AB} \qquad \overrightarrow{ABCDEFGHIJK}
+case-047	display	\overleftarrow{AB} \qquad \overleftrightarrow{ABCDEFGHIJK}
+case-048	display	\underleftarrow{AB} \qquad \underrightarrow{ABCDEFGHIJK} \qquad \underleftrightarrow{ABCDEFGHIJK}
+case-049	display	\overbrace{a+b+c+d+e}^{n\ \mathrm{términos}} \qquad \underbrace{x_1+x_2+\cdots+x_n}_{\mathrm{suma}}
+case-050	display	\sum_{i=1}^{n} i \qquad \prod_{i=1}^{n} i \qquad \lim_{x\to 0}\frac{\sin x}{x}
+case-051	display	\sum_{i=1}^{n} \sum_{j=1}^{m} \sum_{k=1}^{p} a_{ijk}
+case-052	display	\prod_{i=1}^{n} \left( 1+\frac{x_i}{1+x_i^2} \right)
+case-053	display	\sum_{\substack{1\le i\le n\\1\le j\le m\\i\neq j}} \frac{x_i-x_j}{1+(x_i-x_j)^2}
+case-054	display	\int_0^1 x^2\,dx
+case-055	display	\int_{-\infty}^{\infty} e^{-x^2}\,dx
+case-056	display	\iint \frac{1}{1+x^2+y^2}\,dx\,dy \qquad \iiint \frac{1}{1+x^2+y^2+z^2}\,dx\,dy\,dz
+case-057	display	\oint_\Gamma \frac{dz}{z} \qquad \oiint_S \mathbf{F}\cdot d\mathbf{S}
+case-058	display	\int_0^\infty \frac{ x^{\alpha-1} }{ 1+x } \,dx
+case-059	display	\sin x+\cos x+\tan x+\log x+\ln x+\exp x
+case-060	display	\lim_{x\to 0}\frac{\sin x}{x}=1
+case-061	display	\sin^2 x+\cos^2 x=1
+case-062	display	\mathrm{ABCxyz123} \qquad \mathbf{ABCxyz123} \qquad \mathit{ABCxyz123}
+case-063	display	\mathsf{ABCxyz123} \qquad \mathtt{ABCxyz123}
+case-064	display	\mathbb{ABCDEFGHIJKLMNOPQRSTUVWXYZ}
+case-065	display	\mathcal{ABCDEFGHIJKLMNOPQRSTUVWXYZ}
+case-066	display	\mathfrak{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz}
+case-067	display	\mathscr{ABCDEFGHIJKLMNOPQRSTUVWXYZ}
+case-068	display	\boldsymbol{\alpha+\beta+\Gamma+\sum_{i=1}^n x_i}
+case-069	display	\pmb{ABC+\alpha+\beta}
+case-070	display	x = \begin{cases} 1, & \text{si } x>0,\\ 0, & \text{si } x=0,\\ -1, & \text{si } x<0. \end{cases}
+case-071	display	\text{Texto normal dentro de una fórmula: } a^2+b^2=c^2
+case-072	display	\mathrm{Var}(X) = \mathrm{E}\!\left[(X-\mathrm{E}[X])^2\right]
+case-073	display	\begin{matrix} a & b \\ c & d \end{matrix}
+case-074	display	\begin{pmatrix} a & b \\ c & d \end{pmatrix} \qquad \begin{bmatrix} 1 & 2 & 3 \\ 4 & 5 & 6 \\ 7 & 8 & 9 \end{bmatrix}
+case-075	display	\begin{vmatrix} a & b \\ c & d \end{vmatrix} \qquad \begin{Vmatrix} a & b \\ c & d \end{Vmatrix}
+case-076	display	\begin{Bmatrix} a & b \\ c & d \end{Bmatrix}
+case-077	display	\begin{pmatrix} \frac{a}{b} & \sqrt{x} & \sum_{i=1}^{n}i \\ \widehat{J}_G & \int_0^1x\,dx & x_{i_j}^{a^{b^c}} \\ \overbrace{a+b+c}^{3} & \left(\frac{p}{q}\right)^2 & \widetilde{XYZ} \end{pmatrix}
+case-078	display	\begin{array}{lcr} a & b & c \\ d & e & f \\ g & h & i \end{array}
+case-079	display	\begin{array}{l|c|r} \frac{a}{b} & \sqrt{x} & x^2 \\ \sum_{i=1}^n i & \widehat{ABC} & \int_0^1 x\,dx \end{array}
+case-080	display	f(x)= \begin{cases} x^2, & x<0,\\ \sqrt{x}, & 0\le x<1,\\ \frac{1}{1+x}, & x\ge 1. \end{cases}
+case-081	display	g(n)= \begin{cases} \displaystyle\sum_{i=1}^{n} i^2, & n>0,\\ 0, & n=0,\\ -\displaystyle\sum_{i=n}^{-1} i^2, & n<0. \end{cases}
+case-082	display	\begin{aligned} a &= b+c+d,\\ &= e+f+g,\\ &= \frac{x+y}{z}+\sqrt{w}. \end{aligned}
+case-083	display	\begin{aligned} \widehat{J}_G &=b_0+b_EE+b_RR+b_PP+b_DD+b_VV+\varepsilon,\\ R^2 &=1-\frac{\sum_i(y_i-\widehat y_i)^2}{\sum_i(y_i-\bar y)^2}. \end{aligned}
+case-084	display	\begin{split} F(x) &= \frac{ \sum_{i=1}^{n} \left( \alpha_i x_i^2+\beta_i x_i+\gamma_i \right) }{ 1+\sqrt{ 1+\sum_{j=1}^{m}x_j^2 } }\\ &\quad +\int_0^\infty e^{-tx}\sin(tx)\,dt. \end{split}
+case-085	display	\begin{gather} a=b+c,\\ d=e+f,\\ \widehat{XYZ}=\widetilde{ABC}. \end{gather}
+case-086	display	\begin{multline} F(x_1,\ldots,x_n) = \sum_{i=1}^{n} \frac{ \alpha_i x_i^2+\beta_i x_i+\gamma_i }{ 1+x_i^2 } + \prod_{j=1}^{m} \left( 1+\frac{y_j}{1+y_j^2} \right)\\ + \int_0^\infty e^{-t} \frac{ \sin(tx)+\cos(tx) }{ 1+t^2 } \,dt. \end{multline}
+case-087	display	\overset{!}{=} \qquad a \overset{\mathrm{def}}{=} b \qquad x \underset{n\to\infty}{\longrightarrow} 0
+case-088	display	A \stackrel{\mathrm{iso}}{\longrightarrow} B
+case-089	display	\overset{ \widehat{ABC} }{ \frac{a+b}{c+d} }
+case-090	display	\cancel{x} \qquad \bcancel{x} \qquad \xcancel{x}
+case-091	display	\cancel{\frac{a+b}{c+d}} \qquad \boxed{\frac{a+b}{c+d}}
+case-092	display	\cancelto{0}{x-x} \qquad \cancelto{\infty}{\frac{1}{x}}
+case-093	display	\boxed{ \widehat{J}_G = b_0+b_EE+b_RR+b_PP+b_DD+b_VV+\varepsilon }
+case-094	display	a\,b \quad a\:b \quad a\;b \quad a\!b \quad a\quad b \quad a\qquad b
+case-095	display	f(x) = \int_0^\infty e^{-x^2}\,dx
+case-096	display	a+\phantom{\frac{X}{Y}}+b
+case-097	display	a+\hphantom{ABCDEFGHIJKLMN}+b
+case-098	display	a+\vphantom{\frac{\frac{A}{B}}{\frac{C}{D}}}+b
+case-099	display	\left( \vphantom{\frac{\frac{A}{B}}{\frac{C}{D}}} x \right)
+case-100	display	\color{red}{a+b+c} \qquad \color{blue}{\frac{a+b}{c+d}}
+case-101	display	\textcolor{green}{\widehat{ABC}} \qquad \textcolor{magenta}{\sqrt{x^2+y^2}}
+case-102	display	\colorbox{yellow}{x^2+y^2}
+case-103	display	\fcolorbox{red}{yellow}{\frac{a+b}{c+d}}
+case-104	display	\textcolor{red}{ \widehat{ \mathbf{ X_{i_j}^{a^{b^c}} } } }
+case-105	display	\boxed{ \textcolor{blue}{ \frac{ \widetilde{ABC} }{ \sqrt[3]{1+x^2} } } }
+case-106	display	\frac{ \frac{ \frac{ \frac{ a }{ b } }{ \frac{ c }{ d } } }{ \frac{ e }{ f } } }{ \sqrt{ 1+ \sqrt{ 1+ \sqrt{ 1+x } } } }
+case-107	display	a_1+a_2+a_3+a_4+a_5+a_6+a_7+a_8+a_9+a_{10} +b_1+b_2+b_3+b_4+b_5+b_6+b_7+b_8+b_9+b_{10} +c_1+c_2+c_3+c_4+c_5+c_6+c_7+c_8+c_9+c_{10}
+case-108	display	\widehat{ ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 }
+case-109	display	\overrightarrow{ ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 }
+case-110	display	x_{gypq} \qquad x^{ABCDEFGHIJKLMNOPQRSTUVWXYZ} \qquad \frac{gypq}{ABCDEFGHIJKLMNOPQRSTUVWXYZ}
+case-111	display	\left( \frac{ g_j+y_q+p_g }{ A^B+C^D } \right)_{gypq}^{ABCDEFGHIJKLMNOPQRSTUVWXYZ}
+case-112	display	\sum_{ \substack{ 1\le i\le n\\ 1\le j\le m\\ 1\le k\le p\\ i\ne j\\ j\ne k\\ i\ne k } } a_{ijk}
+case-113	display	\boxed{ \left[ \frac{ \displaystyle \sum_{ \substack{ 1\le i\le n\\ 1\le j\le m } } \widehat{ \mathbf{ X_{ij} } } }{ \displaystyle \sqrt[ 3 ]{ 1+ \int_0^\infty \frac{ e^{-t^2} }{ 1+t^2 } \,dt } } \right]_ { \mathrm{base} }^{ \widetilde{\mathrm{top}} } }
+case-114	display	\widehat J_G = b_0 +b_EE +b_RR +b_PP +b_DD +b_VV +\varepsilon
+case-115	display	\widehat{\mathbf J}_{G,t} = \mathbf B_0 + \sum_{k=1}^{K} \mathbf B_k \mathbf X_{t-k} + \boldsymbol{\varepsilon}_t
+case-116	display	R^2 = 1- \frac{ \sum_{i=1}^{n} \left( y_i-\widehat y_i \right)^2 }{ \sum_{i=1}^{n} \left( y_i-\bar y \right)^2 }
+case-117	display	\operatorname{logit} \left[ P(Y_i=1\mid X_i) \right] = \beta_0 + \sum_{j=1}^{p} \beta_j X_{ij}
+case-118	display	\mathbf A = \begin{pmatrix} a_{11} & a_{12} & \cdots & a_{1n}\\ a_{21} & a_{22} & \cdots & a_{2n}\\ \vdots & \vdots & \ddots & \vdots\\ a_{n1} & a_{n2} & \cdots & a_{nn} \end{pmatrix}
+case-119	display	\mathbf A\mathbf x=\lambda\mathbf x
+case-120	display	\det(\mathbf A-\lambda\mathbf I)=0
+case-121	display	\mathbf A = \mathbf Q \mathbf\Lambda \mathbf Q^{-1}
+case-122	display	\nabla f = \left( \frac{\partial f}{\partial x}, \frac{\partial f}{\partial y}, \frac{\partial f}{\partial z} \right)
+case-123	display	\nabla^2 f = \frac{\partial^2 f}{\partial x^2} + \frac{\partial^2 f}{\partial y^2} + \frac{\partial^2 f}{\partial z^2}
+case-124	display	\frac{\partial^3 f} {\partial x\,\partial y\,\partial z}
+case-125	display	E=mc^2
+case-126	display	G_{\mu\nu} + \Lambda g_{\mu\nu} = \frac{8\pi G}{c^4} T_{\mu\nu}
+case-127	display	F_{\mu\nu} = \partial_\mu A_\nu - \partial_\nu A_\mu
+case-128	display	\sum_{\mu=0}^{3} \sum_{\nu=0}^{3} g^{\mu\nu} T_{\mu\nu}
+case-129	display	(P\land Q)\to R \qquad P\lor Q \qquad \neg P \qquad P\Leftrightarrow Q
+case-130	display	\forall x\, \exists y\, \left[ P(x,y) \land \neg Q(y) \right]
+case-131	display	G=E\land R\land P\land D\land V
+case-132	display	\hat x
+case-133	display	x
+case-134	display	\widehat{ABCDEFGHIJ}
+case-135	display	\widetilde{ABCDEFGHIJ}
+case-136	display	\frac{a}{b}
+case-137	text	\widehat{J}_G=b_0+b_1x+\varepsilon
+case-138	text	\widehat{J}_G>0
+case-139	text	R^2<1
+case-140	text	y
+case-141	text	z
+case-142	text	\frac ab
+case-143	text	\sqrt x
+case-144	text	\widehat J
+case-145	text	\widetilde x
+case-146	display	\widehat{J}_G = b_0+b_EE+b_RR+b_PP+b_DD+b_VV+\varepsilon
+case-147	display	\left( \frac{ \sum_{i=1}^{n}x_i^2 }{ 1+\sqrt{1+\alpha} } \right)^{\!2}
+case-148	display	\left[ \frac{ \prod_{i=1}^{n}(1+x_i) }{ \sum_{j=1}^{m}(1+y_j^2) } \right]^{\!-1}
+case-149	display	\boxed{ \begin{aligned} \widehat{\mathbf J}_{G,t} &= \mathbf B_0 + \sum_{k=1}^{K} \mathbf B_k \mathbf X_{t-k} + \boldsymbol{\varepsilon}_t,\\[4pt] \mathbf X_t &= \begin{pmatrix} \displaystyle \frac{ \widehat{E}_t }{ 1+\sqrt{1+E_t^2} } & \displaystyle \sum_{i=1}^{n} R_{it}^2 \\ \displaystyle \int_0^\infty e^{-uP_t}\,du & \displaystyle \widetilde{ \prod_{j=1}^{m} (1+D_{jt}) } \end{pmatrix},\\[4pt] G_t &= E_t\land R_t\land P_t\land D_t\land V_t. \end{aligned} }
+case-150	display	\widehat A\quad \widehat{AB}\quad \widehat{ABC}\quad \widehat{ABCD}\quad \widehat{ABCDE}\quad \widehat{ABCDEF}\quad \widehat{ABCDEFG}\quad \widehat{ABCDEFGH}
+case-151	display	\widetilde A\quad \widetilde{AB}\quad \widetilde{ABC}\quad \widetilde{ABCD}\quad \widetilde{ABCDE}\quad \widetilde{ABCDEF}\quad \widetilde{ABCDEFG}\quad \widetilde{ABCDEFGH}
+case-152	display	\overrightarrow A\quad \overrightarrow{AB}\quad \overrightarrow{ABC}\quad \overrightarrow{ABCD}\quad \overrightarrow{ABCDE}\quad \overrightarrow{ABCDEF}
+case-153	display	\hat f\quad \hat j\quad \hat J\quad \hat T\quad \hat W\quad \hat y
+case-154	display	\widehat f\quad \widehat j\quad \widehat J\quad \widehat T\quad \widehat W\quad \widehat y
+case-155	display	\widetilde f\quad \widetilde j\quad \widetilde J\quad \widetilde T\quad \widetilde W\quad \widetilde y
+case-156	display	\widehat{ X_{i_j}^{a^{b^c}} } \qquad \widetilde{ \frac{ x_i^2+y_j^2 }{ 1+\alpha } }
+case-157	display	\left( \widehat{ \frac{ A_{ij}^{n+1} }{ B_{kl}^{m-1} } } \right)_ { p_q }^{ r^s }
+case-158	display	\boxed{ \left\{ \frac{ \displaystyle \sum_{ \substack{ 1\le i\le n\\ 1\le j\le m\\ i\ne j } } \left[ \widehat{ \mathbf X_{ij}^{\,2} } + \widetilde{ \frac{ \alpha_i+\beta_j }{ 1+\gamma_{ij}^2 } } \right] }{ \displaystyle \sqrt[ 3 ]{ 1+ \prod_{k=1}^{p} \left( 1+ \frac{ \int_0^\infty e^{-t^2} \cos(k t) \,dt }{ 1+k^2 } \right) } } \right\}_ { \mathrm{inferior} }^{ \mathrm{superior} } }

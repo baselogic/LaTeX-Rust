@@ -23,7 +23,7 @@ layout path), and renders to SVG, PNG (`features = ["png"]`), or egui shapes
 - Complete accent and decoration support
 - Multiline environments — align, gather, multline, cases, array
 - Color support — named, RGB, HTML, CMYK, gray, `\definecolor`
-- 100% pure Rust — no C, no Python, no shell, no subprocesses
+- Runtime and crate implementation are 100% Rust — no C, Python, shell, or subprocesses
 - MIT OR Apache-2.0
 
 ```
@@ -46,7 +46,7 @@ Inventory: [capabilities](documents/CAPABILITIES.md). Patches: [CONTRIBUTING.md]
 
 ```toml
 [dependencies]
-latex-rust = "1.0"
+latex-rust = "1.2"
 ```
 
 ```rust
@@ -65,6 +65,8 @@ Layout math is exact rationals in this crate. It does not depend on a numeric
 library.
 
 MSRV is **1.76** (matches optional `egui` 0.28).
+
+Repository development also carries an optional [LuaLaTeX differential math oracle](documents/MATH_ORACLE.md). Python and LuaLaTeX are required only to run that external development check; they are not crate or runtime dependencies.
 
 ## Usage
 

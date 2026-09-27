@@ -182,7 +182,7 @@ fn emit(
                 cache.insert(*glyph_id, s.clone());
                 s
             };
-            let glyph_fu_pt = fu_pt * &glyph_render_scale(bx, font, *ch, *glyph_id)?;
+            let glyph_fu_pt = fu_pt * &glyph_render_scale(bx, font)?;
             let sx = glyph_fu_pt.to_svg_string();
             let nsx = (-glyph_fu_pt).to_svg_string();
             out.push_str(&format!(

@@ -1,6 +1,6 @@
 [package]
 name = "latex-rust"
-version = "1.1.0"
+version = "1.2.0"
 edition = "2021"
 rust-version = "1.76"
 authors = ["Jeffrey S Carr <jscarr1964@gmail.com>"]
@@ -26,7 +26,10 @@ include = [
     "CHANGELOG.md",
     "NOTICE",
     "documents/CAPABILITIES.md",
+    "documents/MATH_ORACLE.md",
     "documents/SYMBOLS.md",
+    "tools/math_compare.lua",
+    "tools/math_oracle.py",
 ]
 
 [lib]
