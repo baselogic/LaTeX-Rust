@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.0.1] — 2026-09-27
+
+A fix for the egui backend. No API changes; upgrade with
+`cargo update -p latex-rust`.
+
+### Fixed
+
+- The egui backend renders every glyph. Before, formulas using `H`, math italic
+  `t` (so `\partial_t u`), `π`, `σ`, `#`, `$`, `€`, `\dashv`, `\natural`, bold
+  and blackboard-bold capitals and about 260 other glyphs failed with
+  `Error::Unsupported { what: "glyph tessellation" }`. `B`, `k`, `τ`, `↦` and
+  about 140 other glyphs were drawn with a stray triangle outside the glyph.
+  The ear clipper that triangulates glyph outlines accepted ears whose closing
+  diagonal ran through another vertex. Its result is now checked exactly, and
+  outlines it cannot triangulate correctly are triangulated by exact scanline
+  trapezoids under the non-zero rule, as the SVG and PNG backends fill them.
+  Glyphs that were already drawn correctly get the same meshes as before.
+
 ## [2.0.0] — 2026-09-27
 
 This release fixes the eight defects Tom Clark reported while integrating
