@@ -77,6 +77,21 @@ fn tessellation_error() -> Error {
     }
 }
 
+fn tessellation_index_error() -> Error {
+    Error::Unsupported {
+        what: "glyph tessellation exceeds u32 index range".into(),
+    }
+}
+
+fn tessellation_index(index: usize) -> Result<u32, Error> {
+    u32::try_from(index).map_err(|_| tessellation_index_error())
+}
+
+fn tessellation_index_offset(base: u32, offset: u32) -> Result<u32, Error> {
+    base.checked_add(offset)
+        .ok_or_else(tessellation_index_error)
+}
+
 fn from_fix(p: Ipt) -> (Dim, Dim) {
     let s = Dim::from_i64(SCALE);
     (Dim::from_i64(p.0) / &s, Dim::from_i64(p.1) / s)
@@ -413,7 +428,11 @@ fn earcut(poly: &[Ipt]) -> Result<Vec<[u32; 3]>, Error> {
             if !empty {
                 continue;
             }
-            tris.push([prev as u32, cur as u32, next as u32]);
+            tris.push([
+                tessellation_index(prev)?,
+                tessellation_index(cur)?,
+                tessellation_index(next)?,
+            ]);
             idx.remove(i);
             clipped = true;
             break;
@@ -425,7 +444,11 @@ fn earcut(poly: &[Ipt]) -> Result<Vec<[u32; 3]>, Error> {
         }
     }
     if idx.len() == 3 {
-        tris.push([idx[0] as u32, idx[1] as u32, idx[2] as u32]);
+        tris.push([
+            tessellation_index(idx[0])?,
+            tessellation_index(idx[1])?,
+            tessellation_index(idx[2])?,
+        ]);
     }
     Ok(tris)
 }
@@ -449,18 +472,22 @@ fn ear_mesh(contours: Vec<Vec<Ipt>>) -> Option<(Vec<Ipt>, Vec<u32>)> {
     let mut indices = Vec::new();
     for poly in polys {
         let tris = earcut(&poly).ok()?;
+        let base = tessellation_index(vertices.len()).ok()?;
+        if let Some(last) = poly.len().checked_sub(1) {
+            let last = tessellation_index(last).ok()?;
+            tessellation_index_offset(base, last).ok()?;
+        }
         if tris
             .iter()
             .any(|&[a, b, c]| cross(poly[a as usize], poly[b as usize], poly[c as usize]) < 0)
         {
             return None;
         }
-        let base = vertices.len() as u32;
         vertices.extend(poly);
         for [a, b, c] in tris {
-            indices.push(base + a);
-            indices.push(base + b);
-            indices.push(base + c);
+            indices.push(tessellation_index_offset(base, a).ok()?);
+            indices.push(tessellation_index_offset(base, b).ok()?);
+            indices.push(tessellation_index_offset(base, c).ok()?);
         }
     }
     Some((vertices, indices))
@@ -712,14 +739,17 @@ fn trapezoid(l: &Edge, r: &Edge, lo: Frac, hi: Frac, out: &mut FracMesh) -> Opti
     if !bottom && !top {
         return Some(());
     }
-    let base = u32::try_from(out.vertices.len()).ok()?;
+    let base = tessellation_index(out.vertices.len()).ok()?;
+    let i1 = tessellation_index_offset(base, 1).ok()?;
+    let i2 = tessellation_index_offset(base, 2).ok()?;
+    let i3 = tessellation_index_offset(base, 3).ok()?;
     out.vertices
         .extend([(bl, lo), (br, lo), (tr, hi), (tl, hi)]);
     if bottom {
-        out.indices.extend([base, base + 1, base + 2]);
+        out.indices.extend([base, i1, i2]);
     }
     if top {
-        out.indices.extend([base, base + 2, base + 3]);
+        out.indices.extend([base, i2, i3]);
     }
     Some(())
 }
@@ -733,6 +763,17 @@ mod tests {
     use super::*;
 
     type P = (Frac, Frac);
+
+    #[cfg(target_pointer_width = "64")]
+    #[test]
+    fn tessellation_index_rejects_u32_overflow() {
+        assert!(tessellation_index(usize::MAX).is_err());
+    }
+
+    #[test]
+    fn tessellation_index_offset_rejects_u32_overflow() {
+        assert!(tessellation_index_offset(u32::MAX, 1).is_err());
+    }
 
     fn outline(font: &MathFont, glyph_id: u16) -> Vec<Vec<Ipt>> {
         let mut b = ContourBuilder::new();
