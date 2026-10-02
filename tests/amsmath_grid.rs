@@ -157,16 +157,46 @@ fn matrix_uses_textstyle_physical_array_spacing_and_axis_center() {
         );
     }
 
-    let rows =
+    let children =
         vlist_children(stack);
 
     assert_eq!(
-        rows.len(),
-        2,
+        children.len(),
+        3,
+        "row, lineskip, row: the fraction is taller than \\baselineskip"
+    );
+
+    let rows = [
+        &children[0],
+        &children[2],
+    ];
+
+    let baselineskip =
+        &Dim::from_i64(12) / &em_size_pt;
+
+    let line_skip =
+        &Dim::from_i64(1) / &em_size_pt;
+
+    let candidate =
+        &(&baselineskip - &rows[0].depth)
+            - &rows[1].height;
+
+    assert!(
+        matches!(
+            candidate.cmp(&Dim::zero()),
+            Some(Ordering::Less)
+        ),
+        "fixture must cross into \\lineskip"
+    );
+
+    assert!(
+        children[1]
+            .depth
+            .eq_dim(&line_skip)
     );
 
     let parts =
-        hlist_children(&rows[0]);
+        hlist_children(rows[0]);
 
     assert_eq!(
         parts.len(),
@@ -281,15 +311,55 @@ fn cases_use_arraystretch_quad_gap_and_axis_center() {
         &axis,
     );
 
-    let rows =
+    let children =
         vlist_children(stack);
 
     assert_eq!(
-        rows.len(),
-        2,
+        children.len(),
+        3,
+        "row, lineskip, row: arraystretch makes the strut taller than \\baselineskip"
     );
 
-    for row in rows {
+    let baselineskip =
+        &Dim::from_i64(12) / &em_size_pt;
+
+    let line_skip =
+        &Dim::from_i64(1) / &em_size_pt;
+
+    let array_stretch =
+        Dim::ratio(6, 5);
+
+    let strut_box =
+        &baselineskip * &array_stretch;
+
+    let expected_strut_height =
+        &Dim::ratio(7, 10) * &strut_box;
+
+    let expected_strut_depth =
+        &Dim::ratio(3, 10) * &strut_box;
+
+    let candidate =
+        &(&baselineskip - &children[0].depth)
+            - &children[2].height;
+
+    assert!(
+        matches!(
+            candidate.cmp(&Dim::zero()),
+            Some(Ordering::Less)
+        ),
+        "fixture must cross into \\lineskip"
+    );
+
+    assert!(
+        children[1]
+            .depth
+            .eq_dim(&line_skip)
+    );
+
+    for row in [
+        &children[0],
+        &children[2],
+    ] {
         let parts =
             hlist_children(row);
 
@@ -308,13 +378,13 @@ fn cases_use_arraystretch_quad_gap_and_axis_center() {
         assert!(
             parts[0]
                 .height
-                .eq_dim(&Dim::ratio(84, 100))
+                .eq_dim(&expected_strut_height)
         );
 
         assert!(
             parts[0]
                 .depth
-                .eq_dim(&Dim::ratio(36, 100))
+                .eq_dim(&expected_strut_depth)
         );
 
         assert!(
@@ -577,7 +647,7 @@ fn aligned_uses_jot_lineskip_and_centers_complete_stack() {
             / &em_size_pt;
 
     let baseline_skip =
-        &Dim::one() + &jot;
+        &(&Dim::from_i64(12) / &em_size_pt) + &jot;
 
     let line_skip =
         &(&Dim::from_i64(1)

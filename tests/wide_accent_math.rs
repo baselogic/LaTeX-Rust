@@ -81,7 +81,7 @@ fn accent_branches(
     )
 }
 
-fn largest_fitting_variant(
+fn smallest_covering_variant(
     font: &MathFont,
     fixed_ch: char,
     seed_ch: char,
@@ -99,7 +99,13 @@ fn largest_fitting_variant(
         fixed.glyph_id;
 
     let mut selected_width =
-        fixed.advance;
+        fixed.advance.clone();
+
+    let mut covered = selected_width
+        .cmp(target_width)
+        .is_some_and(
+            |ordering| ordering != Ordering::Less,
+        );
 
     for glyph_id in
         font.horizontal_variants(seed.glyph_id)
@@ -112,11 +118,22 @@ fn largest_fitting_variant(
             font.glyph_id(seed_ch, glyph_id)
                 .expect("horizontal accent variant");
 
-        let fits = candidate
+        if candidate.advance.is_zero() {
+            continue;
+        }
+
+        let covers = candidate
             .advance
             .cmp(target_width)
             .is_some_and(
-                |ordering| ordering != Ordering::Greater,
+                |ordering| ordering != Ordering::Less,
+            );
+
+        let narrower = candidate
+            .advance
+            .cmp(&selected_width)
+            .is_some_and(
+                |ordering| ordering == Ordering::Less,
             );
 
         let wider = candidate
@@ -126,12 +143,13 @@ fn largest_fitting_variant(
                 |ordering| ordering == Ordering::Greater,
             );
 
-        if fits && wider {
-            selected_id =
-                glyph_id;
-
-            selected_width =
-                candidate.advance;
+        if covers && (!covered || narrower) {
+            selected_id = glyph_id;
+            selected_width = candidate.advance;
+            covered = true;
+        } else if !covered && wider {
+            selected_id = glyph_id;
+            selected_width = candidate.advance;
         }
     }
 
@@ -317,7 +335,7 @@ fn script_style_hat_attachment_uses_script_scale() {
 }
 
 #[test]
-fn wide_accents_use_the_largest_font_variant_that_fits() {
+fn wide_accents_use_the_smallest_font_variant_that_covers() {
     let font =
         MathFont::stix_two_math()
             .expect("embedded STIX Two Math");
@@ -338,7 +356,7 @@ fn wide_accents_use_the_largest_font_variant_that_fits() {
         (r"\widetilde{XYZ}", '˜', '\u{0303}'),
     ] {
         let expected =
-            largest_fitting_variant(
+            smallest_covering_variant(
                 &font,
                 fixed_ch,
                 seed_ch,
@@ -349,10 +367,24 @@ fn wide_accents_use_the_largest_font_variant_that_fits() {
             font.glyph(fixed_ch)
                 .expect("fixed accent glyph");
 
+        let chosen =
+            font.glyph_id(seed_ch, expected)
+                .expect("covering accent glyph");
+
         assert_ne!(
             expected,
             fixed.glyph_id,
             "{source}: fixture needs a wide variant"
+        );
+
+        assert!(
+            chosen
+                .advance
+                .cmp(&base.width)
+                .is_some_and(
+                    |ordering| ordering != Ordering::Less,
+                ),
+            "{source}: accent must cover the nucleus"
         );
 
         let (_, _, accent) =

@@ -118,7 +118,7 @@ lines = "0"
 name = "widetilde-xyz"
 kind = "dims"
 input = "\\widetilde{xyz}"
-expect = "w=1.597 h=0.763 d=0.22"
+expect = "w=1.597 h=0.76 d=0.22"
 
 [[gold]]
 name = "overline-xy"

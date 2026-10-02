@@ -27,6 +27,7 @@ const TEX_DELIMITER_FACTOR_DEN: i64 = 500;
 const TEX_DELIMITER_SHORTFALL_PT: i64 = 5;
 const TEX_ARRAY_COLSEP_PT: i64 = 5;
 const TEX_MIN_ALIGN_SEP_PT: i64 = 10;
+const TEX_BASELINE_SKIP_PT: i64 = 12;
 const TEX_JOT_PT: i64 = 3;
 const TEX_LINE_SKIP_PT: i64 = 1;
 
@@ -824,9 +825,9 @@ impl Engine<'_> {
             let pct = Dim::from_i64(i64::from(self.params.radical_degree_bottom_raise_percent))
                 / Dim::from_i64(100);
 
-            // Measure the configured percentage
-            // upward from the bottom of the complete shifted radical sign.
-            let raise = &(&surd_span * &pct) - &surd_descent;
+            // radicalDegreeBottomRaisePercent is the height of the
+            // degree's ink bottom above the bottom of the radical sign.
+            let raise = &(&(&surd_span * &pct) - &surd_descent) + &db.depth;
             height = height.max(&(&db.height + &raise));
             depth = depth.max(&(&db.depth - &raise).clamp_nonneg());
             let deg_box = db.with_shift(raise);
@@ -1711,8 +1712,9 @@ impl Engine<'_> {
 
     // STIX exposes wide hat/tilde variants from
     // the combining U+0302/U+0303 constructions, not from the spacing
-    // glyph used for the fixed accent. Keep the fixed glyph as the
-    // smallest fallback and choose the widest font variant that fits.
+    // glyph used for the fixed accent. Take the smallest variant at
+    // least as wide as the nucleus so the accent can overhang. If none
+    // covers, keep the widest. The spacing glyph is the fallback.
     fn wide_hat_tilde_glyph(
         &self,
         fixed: MathBox,
@@ -1730,43 +1732,42 @@ impl Engine<'_> {
             self.font.glyph(seed_ch)?;
 
         let mut selected = fixed;
-        let mut selected_width =
-            selected.width.clone();
+        let mut selected_width = selected.width.clone();
+        let mut covered = selected_width
+            .cmp(target_width)
+            .is_some_and(|ordering| ordering != Ordering::Less);
 
-        for glyph_id in
-            self.font.horizontal_variants(seed.glyph_id)
-        {
+        for glyph_id in self.font.horizontal_variants(seed.glyph_id) {
             if glyph_id == seed.glyph_id {
                 continue;
             }
 
-            let candidate =
-                self.glyph_id(seed_ch, glyph_id, style)?;
+            let candidate = self.glyph_id(seed_ch, glyph_id, style)?;
 
             if candidate.width.is_zero() {
                 continue;
             }
 
-            let fits = candidate
+            let covers = candidate
                 .width
                 .cmp(target_width)
-                .is_some_and(
-                    |ordering| ordering != Ordering::Greater,
-                );
-
+                .is_some_and(|ordering| ordering != Ordering::Less);
+            let narrower = candidate
+                .width
+                .cmp(&selected_width)
+                .is_some_and(|ordering| ordering == Ordering::Less);
             let wider = candidate
                 .width
                 .cmp(&selected_width)
-                .is_some_and(
-                    |ordering| ordering == Ordering::Greater,
-                );
+                .is_some_and(|ordering| ordering == Ordering::Greater);
 
-            if fits && wider {
-                selected_width =
-                    candidate.width.clone();
-
-                selected =
-                    candidate;
+            if covers && (!covered || narrower) {
+                selected_width = candidate.width.clone();
+                selected = candidate;
+                covered = true;
+            } else if !covered && wider {
+                selected_width = candidate.width.clone();
+                selected = candidate;
             }
         }
 
@@ -2183,20 +2184,27 @@ impl Engine<'_> {
                 TEX_ARRAY_COLSEP_PT * 2,
             );
 
+        let baseline_skip =
+            self.tex_points_in_root_em(TEX_BASELINE_SKIP_PT);
+        let line_skip =
+            self.tex_points_in_root_em(TEX_LINE_SKIP_PT);
+
         let packed_rows =
             self.build_amsmath_rows(
                 cells,
                 &column_gap,
-                &Dim::one(),
+                &baseline_skip,
                 |_| ColSpec::Center,
                 |column| column > 0,
             );
 
         let gaps =
-            vec![
-                Dim::zero();
-                packed_rows.len().saturating_sub(1)
-            ];
+            self.tex_interrow_gaps(
+                &packed_rows,
+                &baseline_skip,
+                &line_skip,
+                &Dim::zero(),
+            );
 
         let stack =
             self.center_amsmath_stack(
@@ -2231,20 +2239,28 @@ impl Engine<'_> {
                 MathStyle::Text,
             )?;
 
+        let baseline_skip =
+            self.tex_points_in_root_em(TEX_BASELINE_SKIP_PT);
+        let line_skip =
+            self.tex_points_in_root_em(TEX_LINE_SKIP_PT);
+        let array_stretch = Dim::ratio(6, 5);
+
         let packed_rows =
             self.build_amsmath_rows(
                 cells,
                 &Dim::one(),
-                &Dim::ratio(6, 5),
+                &(&baseline_skip * &array_stretch),
                 |_| ColSpec::Left,
                 |column| column > 0,
             );
 
         let gaps =
-            vec![
-                Dim::zero();
-                packed_rows.len().saturating_sub(1)
-            ];
+            self.tex_interrow_gaps(
+                &packed_rows,
+                &baseline_skip,
+                &line_skip,
+                &Dim::zero(),
+            );
 
         let stack =
             self.center_amsmath_stack(
@@ -2338,7 +2354,7 @@ impl Engine<'_> {
             self.build_amsmath_rows(
                 cells,
                 &pair_gap,
-                &Dim::one(),
+                &self.tex_points_in_root_em(TEX_BASELINE_SKIP_PT),
                 |column| {
                     if column % 2 == 0 {
                         ColSpec::Right
@@ -2547,27 +2563,36 @@ impl Engine<'_> {
         rows: &[MathBox],
     ) -> Vec<Dim> {
         let jot =
-            self.tex_points_in_root_em(
-                TEX_JOT_PT,
-            );
-
+            self.tex_points_in_root_em(TEX_JOT_PT);
         let baseline_skip =
-            &Dim::one() + &jot;
-
+            &self.tex_points_in_root_em(TEX_BASELINE_SKIP_PT) + &jot;
         let line_skip =
-            &self.tex_points_in_root_em(
-                TEX_LINE_SKIP_PT,
-            ) + &jot;
+            &self.tex_points_in_root_em(TEX_LINE_SKIP_PT) + &jot;
 
+        self.tex_interrow_gaps(
+            rows,
+            &baseline_skip,
+            &line_skip,
+            &jot,
+        )
+    }
+
+    // TeX appends \baselineskip - prevdepth - height when that glue is
+    // at least \lineskiplimit, and \lineskip otherwise.
+    fn tex_interrow_gaps(
+        &self,
+        rows: &[MathBox],
+        baseline_skip: &Dim,
+        line_skip: &Dim,
+        line_skip_limit: &Dim,
+    ) -> Vec<Dim> {
         rows.windows(2)
             .map(|pair| {
                 let candidate =
-                    &(&baseline_skip
-                        - &pair[0].depth)
-                        - &pair[1].height;
+                    &(baseline_skip - &pair[0].depth) - &pair[1].height;
 
                 if matches!(
-                    candidate.cmp(&jot),
+                    candidate.cmp(line_skip_limit),
                     Some(Ordering::Less)
                 ) {
                     line_skip.clone()

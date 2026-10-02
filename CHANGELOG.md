@@ -1,5 +1,45 @@
 # Changelog
 
+## [2.1.0] — 2026-10-02
+
+Layout follows more of TeX and the OpenType MATH table. Dimensions of fractions,
+delimiters, radicals, scripts, accents, large operators, integrals, and AMSMath
+grids change. `layout_with_em_size_pt` and
+`layout_with_numbering_and_em_size_pt` take the physical root em so absolute
+TeX lengths stay stable when the render size changes. SVG, PNG, and egui pass
+their existing font size (12 pt, 12 pt, and 14 pt). `layout` still assumes 10 pt.
+
+### Fixed
+
+- Delimiter-less fractions are as wide as the numerator, the denominator, and
+  the rule. Automatic delimiters use TeX's delimiter factor and a physical 5 pt
+  `\delimitershortfall`, and sit on the math axis.
+- Radical variant slack goes into the rule gap and the descent.
+  `radicalDegreeBottomRaisePercent` raises the bottom of the degree.
+- Display large operators sit on the math axis. Upper and lower limits each
+  obey their own baseline and gap minima.
+- Script style uses OpenType `ssty` alternates. `SpaceAfterScript` is taken at
+  the parent style. A row adds math italic correction to a bare variable, and
+  does not add it again when that variable's scripts already include it.
+- Wide hats and tildes use the smallest MATH horizontal variant that covers the
+  nucleus, placed with `TopAccentAttachment`.
+- Matrices, cases, and aligned environments use their TeX styles and physical
+  column spacing. Row rhythm uses LaTeX's 12 pt `\baselineskip`. `aligned` adds
+  `\jot` the way amsmath's `\openup` does. `cases` uses `\arraystretch` 1.2 and
+  a `\quad` between columns.
+- A display integral with side scripts is centered on the math axis. Its italic
+  correction shifts the superscript and not the subscript.
+- Exact-rational decimal formatting no longer overflows while printing a
+  remainder. egui tessellation rejects vertex indexes that do not fit in a
+  `u32`.
+
+### Thanks
+
+baselogic (pull request 13) wrote the layout corrections and the regression
+tests for delimiter sizing, fraction width, radical variant slack, large-operator
+limits, script placement, row italic correction, AMSMath column spacing,
+display-integral side scripts, and both overflow checks.
+
 ## [2.0.1] — 2026-09-27
 
 A fix for the egui backend. No API changes; upgrade with

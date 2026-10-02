@@ -102,9 +102,14 @@ fn radical_degree_uses_bottom_of_corrected_surd_span() {
     let surd_span = &parts.surd.height + &parts.surd.depth;
     let pct =
         Dim::from_i64(i64::from(params.radical_degree_bottom_raise_percent)) / Dim::from_i64(100);
-    let expected_shift = &(&surd_span * &pct) - &corrected_descent;
+    let expected_bottom = &(&surd_span * &pct) - &corrected_descent;
 
-    assert_eq!(degree.shift, expected_shift);
+    assert!(
+        (&degree.shift - &degree.depth).eq_dim(&expected_bottom),
+        "degree bottom {}, expected {}",
+        (&degree.shift - &degree.depth).to_dec_string(),
+        expected_bottom.to_dec_string()
+    );
     assert_eq!(
         children[0].width,
         &params.radical_kern_before_degree * &params.scale(style)
