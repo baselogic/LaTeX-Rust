@@ -121,24 +121,47 @@ fn png_glyph_ink_follows_glyph_scale() {
 #[test]
 fn egui_script_glyph_mesh_is_scaled() {
     use egui::{Pos2, Shape};
-    use latex_rust::{latex_to_shapes, EguiOptions};
+    use latex_rust::{shapes, EguiOptions};
+
     let font = MathFont::stix_two_math().expect("STIX Two Math");
-    let mesh_h = |latex: &str| {
+    let glyph_id = font.glyph('2').expect("digit 2").glyph_id;
+
+    // Renderer scaling is independent of OpenType ssty alternate
+    // selection. Keep the glyph id fixed so an OpenType
+    // `ssty` alternate cannot change the outline proportions being compared.
+    let mesh_h = |scale: Dim| {
+        let bx = MathBox {
+            width: Dim::from_i64(2),
+            height: Dim::from_i64(2),
+            depth: Dim::one(),
+            italic: Dim::zero(),
+            shift: Dim::zero(),
+            content: BoxContent::glyph('2', glyph_id, scale),
+        };
+
         let (shapes, _) =
-            latex_to_shapes(latex, &font, &EguiOptions::new(), Pos2::ZERO, 1.0).expect("shapes");
+            shapes(&bx, &font, &EguiOptions::new(), Pos2::ZERO, 1.0).expect("shapes");
+
         let ys: Vec<f32> = shapes
             .iter()
-            .filter_map(|s| match s {
-                Shape::Mesh(m) => Some(m.vertices.iter().map(|v| v.pos.y).collect::<Vec<_>>()),
+            .filter_map(|shape| match shape {
+                Shape::Mesh(mesh) => {
+                    Some(mesh.vertices.iter().map(|vertex| vertex.pos.y).collect::<Vec<_>>())
+                }
                 _ => None,
             })
             .flatten()
             .collect();
+
         let lo = ys.iter().copied().fold(f32::INFINITY, f32::min);
         let hi = ys.iter().copied().fold(f32::NEG_INFINITY, f32::max);
         hi - lo
     };
-    let ratio = mesh_h("{}^{2}") / mesh_h("2");
+
+    let text = mesh_h(Dim::one());
+    let script = mesh_h(script_scale());
+    let ratio = script / text;
+
     assert!(
         (ratio - 0.7).abs() < 1e-3,
         "script/text mesh height ratio {ratio}"

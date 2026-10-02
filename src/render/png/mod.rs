@@ -131,13 +131,13 @@ pub fn latex_to_png(latex: &str, font: &MathFont, options: &PngOptions) -> Resul
     }
     #[cfg(feature = "png")]
     {
-        use crate::layout::{layout, MathStyle};
+        use crate::layout::{layout_with_em_size_pt, MathStyle};
         let style = if options.display {
             MathStyle::Display
         } else {
             MathStyle::Text
         };
-        let tree = layout(&ast, font, style)?;
+        let tree = layout_with_em_size_pt(&ast, font, style, &options.font_size_pt)?;
         render_png(&tree, font, options)
     }
 }

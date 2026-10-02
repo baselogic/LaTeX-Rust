@@ -192,7 +192,7 @@ pub fn latex_to_shapes(
     origin: egui::Pos2,
     pixels_per_point: f32,
 ) -> Result<(Vec<egui::Shape>, egui::Rect), Error> {
-    use crate::layout::{layout, MathStyle};
+    use crate::layout::{layout_with_em_size_pt, MathStyle};
     use crate::parser::parse;
     let ast = parse(latex)?;
     let style = if options.display {
@@ -200,7 +200,7 @@ pub fn latex_to_shapes(
     } else {
         MathStyle::Text
     };
-    let tree = layout(&ast, font, style)?;
+    let tree = layout_with_em_size_pt(&ast, font, style, &options.font_size_pt)?;
     shapes(&tree, font, options, origin, pixels_per_point)
 }
 

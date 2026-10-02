@@ -72,8 +72,9 @@ pub use font::{
     GlyphMetrics, MathFont, STIX_TWO_MATH_NAME, STIX_TWO_MATH_OTF, STIX_TWO_MATH_SHA256,
 };
 pub use layout::{
-    layout, layout_with_max_depth, layout_with_numbering, BoxContent, MathBox, MathParams,
-    MathStyle, NumberFormat, NumberStyle, NumberingConfig, NumberingState,
+    layout, layout_with_em_size_pt, layout_with_max_depth, layout_with_numbering,
+    layout_with_numbering_and_em_size_pt, BoxContent, MathBox, MathParams, MathStyle,
+    NumberFormat, NumberStyle, NumberingConfig, NumberingState,
 };
 pub use parser::{
     format_tokens, parse, parse_with_colors, parse_with_options, preprocess, tokenize, AccentKind,
